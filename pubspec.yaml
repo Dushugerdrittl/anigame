@@ -37,6 +37,8 @@ dependencies:
   provider: ^6.0.0
   collection: ^1.17.0
   shared_preferences: ^2.0.0
+  uuid: ^4.3.3 # Add this line
+
 
 dev_dependencies:
   flutter_test:
@@ -65,7 +67,8 @@ flutter:
     - assets/cards/naruto/
     - assets/cards/one_piece/
     - assets/cards/teen_titans/
-    - assets/Themes/ # This will include all files in this folder, including Hinata.jpg and spirit.png
+    - assets/Themes/
+    - assets/cards/event_cards/powerpuff_girls/ # This will include all files in this folder, including Hinata.jpg and spirit.png
     # - assets/cards/naruto/spirit.png # Or add individually if you prefer
 
   # An image asset can refer to one or more resolution-specific "variants", see

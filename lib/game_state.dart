@@ -3,6 +3,7 @@ import 'card_model.dart';
 import 'elemental_system.dart';
 import 'talent_system.dart';
 import 'dart:math'; // For Random
+import 'dart:async'; // For Timer
 import 'data/card_supply_data.dart'; // Import the new card supply data
 import 'data/card_definitions.dart'; // Import the new card definitions
 import 'models/floor_model.dart'; // Import Floor model
@@ -12,6 +13,8 @@ import 'utils/rarity_stats_util.dart'; // Import the new utility
 import 'utils/leveling_cost_util.dart'; // Import leveling cost utility
 import 'utils/enemy_difficulty_scaler.dart'; // Import the new difficulty scaler
 import 'data/floor_definitions.dart'; // Import Floor definitions
+import 'event_logic.dart'; // Import RaidEvent logic
+import 'package:uuid/uuid.dart'; // For generating unique player ID
 
 class GameState extends ChangeNotifier {
   Card? playerCard; // This will be a COPY of the selected card for the current battle
@@ -63,9 +66,22 @@ class GameState extends ChangeNotifier {
   final Map<ShardType, int> _playerShards = {}; // Changed Key to ShardType
   Map<ShardType, int> get playerShards => Map.unmodifiable(_playerShards);
 
+  // --- Raid Event State ---
+  final List<RaidEvent> _activeRaidEvents = [];
+  List<RaidEvent> get activeRaidEvents => List.unmodifiable(_activeRaidEvents);
+  Timer? _raidEventStatusUpdaterTimer;
+  Timer? _ultraRareRaidSpawnTimer;
+  Timer? _superRareRaidSpawnTimer;
+  Timer? _commonUncommonRareRaidSpawnTimer;
+  static const int MAX_ACTIVE_RAIDS = 10; // Example limit for total active raids
+
+  String _currentPlayerId = ""; // Internal storage for player ID
+  String get currentPlayerId => _currentPlayerId; // Public getter
+
   // --- Gold Shop Card Getters ---
   List<Card> _getShopCardsByRarity(CardRarity rarity) {
     return CardDefinitions.availableCards.where((card) { // Use definitions from CardDefinitions
+      if (card.rarity != CardRarity.COMMON) return false; // Only show base common templates in shop for now
       // Check if the card template *can* be of the specified rarity
       final raritySupplies = CardSupplyData.cardMaxSupply[card.id];
       return raritySupplies?.containsKey(rarity) ?? false;
@@ -112,6 +128,8 @@ class GameState extends ChangeNotifier {
   GameState() {
     // Load game state when GameState is created
     loadGameState();
+    _startRaidSpawnersAndUpdaters();
+    _spawnInitialTestRaids(); // For testing
   }
 
   void resetToDefaultState() {
@@ -123,8 +141,10 @@ class GameState extends ChangeNotifier {
     _playerShards.clear();
     _unlockedFloorIds.clear();
     _completedFloorIds.clear();
+    _activeRaidEvents.clear(); // Clear active raids on reset
     _highestUnlockedLevelPerFloor.clear();
     _completedLevelsPerFloor.clear();
+    // _currentPlayerId remains as it's a persistent identifier unless explicitly reset
 
     // Re-initialize to starting conditions
     _initializeUserInventory(); // This also sets _currentlySelectedPlayerCard
@@ -134,9 +154,30 @@ class GameState extends ChangeNotifier {
       _highestUnlockedLevelPerFloor[gameFloors.first.id] = 1;
     }
     
+    _spawnInitialTestRaids(); // Optionally spawn test raids after reset
+
     _logMessage("Game progress has been reset to default.");
     notifyListeners();
     saveGameState(); // Save the reset state
+  }
+
+  void _startRaidSpawnersAndUpdaters() {
+    // Cancel existing timers if any (e.g., during a hot restart or re-initialization)
+    _raidEventStatusUpdaterTimer?.cancel();
+    _ultraRareRaidSpawnTimer?.cancel();
+    _superRareRaidSpawnTimer?.cancel();
+    _commonUncommonRareRaidSpawnTimer?.cancel();
+
+    // Timer to update statuses of existing raids
+    _raidEventStatusUpdaterTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
+      updateRaidEventStatuses();
+    });
+
+    // Raid Spawning Timers
+    _ultraRareRaidSpawnTimer = Timer.periodic(const Duration(minutes: 30), (timer) => _spawnRaidsByRarity(CardRarity.ULTRA_RARE, 1));
+    _superRareRaidSpawnTimer = Timer.periodic(const Duration(minutes: 10), (timer) => _spawnRaidsByRarity(CardRarity.SUPER_RARE, 1));
+    _commonUncommonRareRaidSpawnTimer = Timer.periodic(const Duration(minutes: 5), (timer) => _spawnRandomLowTierRaids());
+
   }
 
   void _initializeUserInventory() {
@@ -1436,6 +1477,7 @@ class GameState extends ChangeNotifier {
       return '${e.key}|$levels';
     }).toList();
     await prefs.setStringList('completedLevelsPerFloor', completedLevelsJson);
+    await prefs.setString('currentPlayerId', _currentPlayerId); // Save player ID
     notifyListeners();
   }
 
@@ -1445,6 +1487,13 @@ class GameState extends ChangeNotifier {
     _playerCurrency = prefs.getInt('playerCurrency') ?? 500;
     _playerDiamonds = prefs.getInt('playerDiamonds') ?? 10;
     _playerSouls = prefs.getInt('playerSouls') ?? 1000;
+
+    _currentPlayerId = prefs.getString('currentPlayerId') ?? "";
+    if (_currentPlayerId.isEmpty) {
+      _currentPlayerId = const Uuid().v4(); // Generate a new unique ID
+      await prefs.setString('currentPlayerId', _currentPlayerId); // Save it immediately
+      _logMessage("New player ID generated and saved: $_currentPlayerId");
+    }
 
     List<String>? ownedCardsJson = prefs.getStringList('userOwnedCards');
     if (ownedCardsJson != null && ownedCardsJson.isNotEmpty) {
@@ -1538,6 +1587,163 @@ class GameState extends ChangeNotifier {
     _logMessage("Game state loaded.");
     notifyListeners();
   }
+
+  // --- Raid Event Management ---
+
+  void _spawnInitialTestRaids() { // For testing purposes
+    if (CardDefinitions.eventCards.isNotEmpty) {
+      spawnNewRaidEvent(rarityOverride: CardRarity.COMMON);
+      spawnNewRaidEvent(rarityOverride: CardRarity.RARE);
+      if (_activeRaidEvents.length < MAX_ACTIVE_RAIDS) {
+         spawnNewRaidEvent(rarityOverride: CardRarity.SUPER_RARE);
+      }
+    }
+  }
+
+  void _spawnRaidsByRarity(CardRarity rarity, int count) {
+    for (int i = 0; i < count; i++) {
+      if (_activeRaidEvents.length >= MAX_ACTIVE_RAIDS) {
+        _logMessage("Max active raids reached. Cannot spawn new ${rarity.name} raid.");
+        return;
+      }
+      spawnNewRaidEvent(rarityOverride: rarity);
+    }
+  }
+
+  void _spawnRandomLowTierRaids() {
+    if (CardDefinitions.eventCards.isEmpty) return;
+    int numberOfRaidsToSpawn = _random.nextInt(2) + 3; // 3 to 4 raids
+
+    for (int i = 0; i < numberOfRaidsToSpawn; i++) {
+      if (_activeRaidEvents.length >= MAX_ACTIVE_RAIDS) {
+        _logMessage("Max active raids reached. Cannot spawn more low tier raids.");
+        break;
+      }
+      // Randomly pick between Common, Uncommon, Rare
+      List<CardRarity> lowTiers = [CardRarity.COMMON, CardRarity.UNCOMMON, CardRarity.RARE];
+      CardRarity selectedRarity = lowTiers[_random.nextInt(lowTiers.length)];
+      spawnNewRaidEvent(rarityOverride: selectedRarity);
+    }
+  }
+
+  // Method to spawn a new raid event
+  void spawnNewRaidEvent({Card? specificBossCard, CardRarity? rarityOverride}) {
+    if (_activeRaidEvents.length >= MAX_ACTIVE_RAIDS) {
+        _logMessage("Max active raids ($MAX_ACTIVE_RAIDS) reached. Cannot spawn new raid.");
+        return;
+    }
+
+    Card bossToSpawn;
+    if (specificBossCard != null) {
+      // Use the provided boss card, potentially adjusting its rarity if overridden
+      CardRarity finalRarity = rarityOverride ?? specificBossCard.rarity;
+      bossToSpawn = _copyCard(specificBossCard, finalRarity, specificBossCard.level);
+    } else {
+      if (CardDefinitions.eventCards.isEmpty) {
+        _logMessage("No event card definitions available to spawn a raid.");
+        return;
+      }
+      // Randomly select a boss from event card definitions
+      final bossTemplate = CardDefinitions.eventCards[_random.nextInt(CardDefinitions.eventCards.length)];
+      CardRarity finalRarity = rarityOverride ?? bossTemplate.rarity; // Use override if provided, else template's
+
+      // Create a fresh instance for the raid.
+      // Event bosses might have a fixed level or scaled based on rarity.
+      // For simplicity, let's use a fixed level for now, e.g., Lvl 50, and apply rarity stats.
+      bossToSpawn = _copyCard(bossTemplate, finalRarity, 50); // Example: Event boss is Lvl 50
+    }
+    _applyEvolutionAscensionBattleStats(bossToSpawn); // Apply evo/asc stats if defined on template
+
+    final newRaid = RaidEvent(bossCard: bossToSpawn);
+    _activeRaidEvents.add(newRaid);
+    _logMessage("New Raid Event spawned: ${bossToSpawn.name} (Rarity: ${newRaid.rarity}, ID: ${newRaid.id}). Lobby expires at ${newRaid.lobbyExpiresAt}.");
+    notifyListeners();
+  }
+  // Method to be called periodically to update raid statuses
+  void updateRaidEventStatuses() {
+    if (_activeRaidEvents.isEmpty) return;
+
+    bool changed = false;
+    // Iterate backwards if removing items to avoid index issues, or use removeWhere
+    _activeRaidEvents.removeWhere((raid) {
+      RaidEventStatus oldStatus = raid.status;
+      raid.updateStatus();
+      if (raid.status != oldStatus) { // Log if status changed
+        _logMessage("Raid ${raid.id} (${raid.bossCard.name}) status changed from $oldStatus to ${raid.status}");
+        changed = true;
+      }
+
+      if (raid.status == RaidEventStatus.expiredUnstarted ||
+          raid.status == RaidEventStatus.completedSuccess ||
+          raid.status == RaidEventStatus.completedFailure ||
+          raid.status == RaidEventStatus.expiredInProgress) {
+        _logMessage("Raid Event ${raid.id} (${raid.bossCard.name}) ended. Removing from active list.");
+        changed = true;
+        return true; // Remove from active list
+      }
+      return false;
+    });
+
+    if (changed) {
+      notifyListeners();
+    }
+  }
+
+  // --- Raid Lobby Interactions ---
+  bool joinRaidLobby(String raidId, String playerId) {
+    final raid = _activeRaidEvents.firstWhereOrNull((r) => r.id == raidId);
+    if (raid != null) {
+      if (raid.addPlayer(playerId)) {
+        _logMessage("$playerId joined lobby for raid: ${raid.bossCard.name} (ID: $raidId)");
+        notifyListeners();
+        return true;
+      } else {
+        _logMessage("Failed to join lobby for $playerId (ID: $raidId). Lobby full or already joined.");
+      }
+    } else {
+      _logMessage("Could not find raid with ID: $raidId to join.");
+    }
+    return false;
+  }
+
+  bool leaveRaidLobby(String raidId, String playerId) {
+    final raid = _activeRaidEvents.firstWhereOrNull((r) => r.id == raidId);
+    if (raid != null) {
+      if (raid.removePlayer(playerId)) {
+        _logMessage("$playerId left lobby for raid: ${raid.bossCard.name} (ID: $raidId)");
+        notifyListeners();
+        return true;
+      }
+    }
+    return false;
+  }
+
+  bool kickPlayerFromRaidLobby(String raidId, String kickerId, String playerIdToKick) {
+    final raid = _activeRaidEvents.firstWhereOrNull((r) => r.id == raidId);
+    if (raid != null) {
+      if (raid.removePlayer(playerIdToKick, kickerId: kickerId)) {
+        _logMessage("$kickerId kicked $playerIdToKick from lobby: ${raid.bossCard.name} (ID: $raidId)");
+        notifyListeners();
+        return true;
+      }
+    }
+    return false;
+  }
+
+  bool startRaidBattle(String raidId, String starterId) {
+    final raid = _activeRaidEvents.firstWhereOrNull((r) => r.id == raidId);
+    return raid?.startBattle(starterId) ?? false;
+  }
+
+  @override
+  void dispose() {
+    _raidEventStatusUpdaterTimer?.cancel();
+    _ultraRareRaidSpawnTimer?.cancel();
+    _superRareRaidSpawnTimer?.cancel();
+    _commonUncommonRareRaidSpawnTimer?.cancel();
+    super.dispose();
+  }
+
 
   // Note: cardToJson and cardFromJson methods are expected to be in card_model.dart
 }

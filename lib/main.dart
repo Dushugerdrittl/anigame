@@ -13,6 +13,9 @@ import 'screens/talent_guide_landing_screen.dart'; // Import the new Talent Guid
 import 'screens/elements_guide_screen.dart'; // Import the new Elements Guide Screen
 import 'screens/talents_list_guide_screen.dart'; // Import the new Talents List Guide Screen
 import 'screens/event_cards_shop_screen.dart'; // Import Event Cards Shop Screen
+import 'screens/event_screen.dart'; // Import the actual EventScreen
+import 'screens/raid_battle_screen.dart'; // Import RaidBattleScreen
+import 'screens/raid_lobby_screen.dart'; // Import RaidLobbyScreen
 import 'screens/user_profile_screen.dart'; // Import UserProfileScreen
 import 'widgets/themed_scaffold.dart'; // Import ThemedScaffold
 
@@ -99,8 +102,18 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         '/elements_guide': (context) => const ElementsGuideScreen(),
         '/talents_list_guide': (context) => const TalentsListGuideScreen(),
         '/user_profile': (context) => const UserProfileScreen(), // Updated route
-        '/events': (context) => const PlaceholderScreen(title: "Events"), // Added Events route
+        '/events': (context) => const EventScreen(), // Use the actual EventScreen
         '/event_cards_shop': (context) => const EventCardsShopScreen(), // Added route
+        '/raid_lobby': (context) { // Route for RaidLobbyScreen
+          final raidId = ModalRoute.of(context)!.settings.arguments as String?;
+          if (raidId == null) return const PlaceholderScreen(title: "Error: Raid ID missing"); // Or handle error differently
+          return RaidLobbyScreen(raidId: raidId);
+        },
+        '/raid_battle': (context) { // Route for RaidBattleScreen
+          final raidId = ModalRoute.of(context)!.settings.arguments as String?;
+          if (raidId == null) return const PlaceholderScreen(title: "Error: Raid ID missing for battle");
+          return RaidBattleScreen(raidId: raidId);
+        }
       },
     );
   }

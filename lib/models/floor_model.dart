@@ -7,6 +7,7 @@ class Floor {
   final int numberOfLevels;
   final List<String> themedCardPoolIds; // List of Card IDs that can appear as enemies in this floor
   final int baseRewardPerLevel;
+  final String? backgroundImagePath; // Optional path to a specific background image
   final int rewardForFloorCompletion; // Extra reward for clearing all levels
 
   const Floor({
@@ -16,6 +17,7 @@ class Floor {
     required this.numberOfLevels,
     required this.themedCardPoolIds,
     this.baseRewardPerLevel = 20,
+    this.backgroundImagePath,
     this.rewardForFloorCompletion = 100,
   });
 }

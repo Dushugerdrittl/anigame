@@ -19,6 +19,7 @@ class FloorDefinitions {
         // All Naruto series cards are now included
       ],
       baseRewardPerLevel: 25,
+      backgroundImagePath: "assets/Themes/battle_background_default.jpg", // Example, can be specific
       rewardForFloorCompletion: 150,
     ),
     const Floor(
@@ -36,6 +37,7 @@ class FloorDefinitions {
         // All One Piece series cards are now included
       ],
       baseRewardPerLevel: 40,
+      backgroundImagePath: "assets/Themes/battle_background_default.jpg", // Example, can be specific
       rewardForFloorCompletion: 300,
     ),
     const Floor(
@@ -52,6 +54,7 @@ class FloorDefinitions {
         "deathstroke_slade_wilson",
       ],
       baseRewardPerLevel: 60,
+      backgroundImagePath: "assets/Themes/battle_background_default.jpg", // Example, can be specific
       rewardForFloorCompletion: 500,
     ),
     // Add more floors here in the future

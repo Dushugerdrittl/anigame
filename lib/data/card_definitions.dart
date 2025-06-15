@@ -13,7 +13,7 @@ class CardDefinitions {
       imageUrl: "cards/naruto/Naruto.jpg",
       maxHp: 95, attack: 23, defense: 9, speed: 14, type: CardType.FIRE,
       talent: Talent(
-        name: TalentType.BERSERKER.toString().split('.').last,
+    name: "Berserker", // Or a more thematic name like "Nine-Tails Chakra"
         description: "While your health is low 45％ Max HP, increase the ATK/DEF of all allied familiars by 30%.",
         type: TalentType.BERSERKER,
         value: 0.3,
@@ -308,6 +308,51 @@ class CardDefinitions {
         manaCost: 0
       ),
     ),
+    // --- Powerpuff Girls (as playable cards) ---
+    Card(
+      id: "powerpuff_girls_buttercup_playable", // Unique ID for playable version
+      originalTemplateId: "powerpuff_girls_buttercup_playable",
+      name: "Buttercup",
+      imageUrl: "cards/event_cards/powerpuff_girls/buttercup.jpg",
+      maxHp: 100, attack: 24, defense: 11, speed: 15, type: CardType.GRASS, // Adjusted base stats
+      talent: Talent(
+        name: "LIFE SAP",
+        description: "Saps life from enemies, healing self for a percentage of damage dealt.",
+        type: TalentType.LIFE_SAP,
+        value: 0.25,
+        manaCost: 0, // Assuming passive for base card, or adjust if it's an active skill
+      ),
+    ),
+    Card(
+      id: "powerpuff_girls_blossom_playable", // Unique ID for playable version
+      originalTemplateId: "powerpuff_girls_blossom_playable",
+      name: "Blossom",
+      imageUrl: "cards/event_cards/powerpuff_girls/blossom.jpg",
+      maxHp: 95, attack: 22, defense: 13, speed: 14, type: CardType.FIRE, // Adjusted base stats
+      talent: Talent(
+        name: "TRICK ROOM",
+        description: "If the enemy familiars' ATK is higher than yours, your allies gain ATK equal to 108% of the difference between the two ATK's, and simultaneously reduce their ATK by the same amount.",
+        type: TalentType.TRICK_ROOM_ATK,
+        value: 0.10, // This value might need context for TRICK_ROOM_ATK
+        manaCost: 0, // Assuming passive for base card, or adjust
+      ),
+    ),
+    Card(
+      id: "powerpuff_girls_bubbles_playable", // Unique ID for playable version
+      originalTemplateId: "powerpuff_girls_bubbles_playable",
+      name: "Bubbles",
+      imageUrl: "cards/event_cards/powerpuff_girls/bubbles.jpg",
+      maxHp: 90, attack: 20, defense: 12, speed: 16, type: CardType.WATER, // Adjusted base stats
+      talent: Talent(
+       name: "TRICK ROOM", // Assuming same talent as Blossom for this example, adjust if different
+        description: "If the enemy familiars' ATK is higher than yours, your allies gain ATK equal to 108% of the difference between the two ATK's, and simultaneously reduce their ATK by the same amount.",
+        type: TalentType.TRICK_ROOM_ATK,
+        value: 0.15, // This value might need context for TRICK_ROOM_ATK
+        secondaryValue: 0.20, // This value might need context for TRICK_ROOM_ATK
+        manaCost: 0, // Assuming passive for base card, or adjust
+      ),
+    ),
+    
 
   ];
 
@@ -316,36 +361,54 @@ class CardDefinitions {
   // They could have unique talents or slightly boosted stats for their rarity.
   static final List<Card> eventCards = [
     Card(
-      id: "event_shadow_naruto",
-      originalTemplateId: "event_shadow_naruto", // Can be unique or based on an existing template
-      name: "Shadow Hokage Naruto",
-      imageUrl: "cards/naruto/Naruto_Event.jpg", // Placeholder - create this image
-      maxHp: 100, attack: 28, defense: 12, speed: 17, type: CardType.DARK,
+      id: "powerpuff_girls_butterbup",
+      originalTemplateId: "powerpuff_girls_butterbup", // Can be unique or based on an existing template
+      name: "ButterCup",
+      imageUrl: "cards/event_cards/powerpuff_girls/buttercup.jpg", // Placeholder - create this image
+      maxHp: 1500, attack: 180, defense: 120, speed: 90, type: CardType.GRASS, // Example Raid Boss Stats
       talent: Talent(
-        name: "Kage's Resolve", // Example new Talent
-        description: "Boosts all stats of Dark allies when HP is below 50%.",
-        type: TalentType.BERSERKER, // Can reuse or make a new TalentType
+        name: "LIFE SAP", // Example new Talent
+        description: "Saps life from enemies, healing self for a percentage of damage dealt.",
+        type: TalentType.LIFE_SAP, // Reusing Berserker for example
         value: 0.25, // 25% boost
         manaCost: 0,
       ),
       // Event cards often have a fixed, higher rarity
-      diamondPrice: 250, // Example diamond price
+      diamondPrice: 2500, // Example diamond price
     ),
     Card(
-      id: "event_celestial_luffy",
-      originalTemplateId: "event_celestial_luffy",
-      name: "Celestial King Luffy",
-      imageUrl: "cards/one_piece/Luffy_Event.jpg", // Placeholder - create this image
-      maxHp: 120, attack: 26, defense: 15, speed: 14, type: CardType.LIGHT,
+      id: "powerpuff_girls_blossom",
+      originalTemplateId: "powerpuff_girls_blossom",
+      name: "Blossom",
+      imageUrl: "cards/event_cards/powerpuff_girls/blossom.jpg", // Placeholder - create this image
+      maxHp: 1800, attack: 150, defense: 150, speed: 80, type: CardType.FIRE, // Example Raid Boss Stats
       talent: Talent(
-        name: "King's Aura", // Example new Talent
-        description: "Passively grants a small chance to nullify incoming damage for all allies.",
-        type: TalentType.EVASION, // Example
+        name: "TRICK ROOM", // Example new Talent
+        description: "If the enemy familiars' ATK is higher than yours, your allies gain ATK equal to 108% of the difference between the two ATK's, and simultaneously reduce their ATK by the same amount.",
+        type: TalentType.TRICK_ROOM_ATK, // Example, could be a new one
         value: 0.10, // 10% chance
         manaCost: 0,
       ),
-      diamondPrice: 300, // Example diamond price
+      diamondPrice: 1500, // Example diamond price
     ),
+    Card(
+      id: "powerpuff_girls_bubbles",
+      originalTemplateId: "powerpuff_girls_bubbles",
+      name: "Bubbles",
+      imageUrl: "cards/event_cards/powerpuff_girls/bubbles.jpg", // Placeholder
+      maxHp: 2000, attack: 200, defense: 100, speed: 110, type: CardType.WATER, // Example Raid Boss Stats
+      talent: Talent(
+       name: "TRICK ROOM", // Example new Talent
+        description: "If the enemy familiars' ATK is higher than yours, your allies gain ATK equal to 108% of the difference between the two ATK's, and simultaneously reduce their ATK by the same amount.",
+        type: TalentType.TRICK_ROOM_ATK, // Example, could be new
+        value: 0.15, // 15% damage reduction
+        secondaryValue: 0.20, // 20% counter-attack chance (if DOMINANCE was adapted)
+        manaCost: 0,
+      ),
+      // Rarity for event cards is often fixed, e.g., always ULTRA_RARE for display purposes
+      // The actual RaidEvent instance will use this card's stats and assign a raid rarity.
+    ),
+    
     // Add more event cards here
   ];
 

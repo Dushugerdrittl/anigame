@@ -19,6 +19,12 @@ enum ShardType {
   // RARE_SHARD, EPIC_SHARD, LEGENDARY_SHARD, SOUL_SHARD
 }
 
+// Centralized Rarity Colors
+const Color kRareColor = Colors.blue; // Or Colors.blue.shade600
+const Color kSuperRareColor = Colors.amber; // Or Colors.amber.shade700
+const Color kUltraRareColor = Colors.red; // Or Colors.red.shade700
+const Color kCommonColor = Colors.grey;
+const Color kUncommonColor = Colors.green;
 class Card {
   final String id; // Unique identifier
   final String originalTemplateId; // The ID of the base card template from CardDefinitions

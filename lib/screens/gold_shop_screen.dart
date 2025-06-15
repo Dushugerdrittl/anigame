@@ -7,6 +7,7 @@ import '../elemental_system.dart'; // Import CardType
 import '../talent_system.dart'; // Import TalentType
 import '../data/card_supply_data.dart';
 import '../widgets/themed_scaffold.dart'; // Import ThemedScaffold
+import '../widgets/framed_card_image_widget.dart'; // Import FramedCardImageWidget
 import '../widgets/star_display_widget.dart';
 
 class GoldShopScreen extends StatefulWidget {
@@ -195,13 +196,14 @@ class _GoldShopScreenState extends State<GoldShopScreen> {
         return Card(
           margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
           child: ListTile(
-            leading: SizedBox(
-              width: 50,
-              height: 70,
-              child: Image.asset(
-                'assets/${card.imageUrl}',
-                fit: BoxFit.contain,
-                errorBuilder: (ctx, err, st) => const Icon(Icons.image_not_supported_outlined),
+            leading: SizedBox( // Wrap FramedCardImageWidget in a SizedBox to control its dimensions
+              width: 50, // Define the width you want for the image area
+              height: 75, // Define the height to achieve a 2:3 ratio (50 * 1.5 = 75)
+              child: FramedCardImageWidget( 
+                card: card,
+                width: double.infinity, // Make the widget fill the SizedBox
+                height: double.infinity, // Make the widget fill the SizedBox
+                fit: BoxFit.cover, // BoxFit.cover will fill the bounds, cropping if necessary
               ),
             ),
             title: Text(card.name, style: const TextStyle(fontWeight: FontWeight.bold)),

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../game_state.dart';
 import '../models/floor_model.dart'; // Import Floor model
 import '../widgets/themed_scaffold.dart'; // Import ThemedScaffold
+import '../widgets/framed_card_image_widget.dart'; // Import the new widget
 
 class LevelSelectionScreen extends StatelessWidget {
   final Floor floor;
@@ -40,6 +41,26 @@ class LevelSelectionScreen extends StatelessWidget {
               style: TextStyle(fontSize: 12, color: Colors.red.shade700, fontWeight: FontWeight.bold),
             ),
           ),
+          // Display currently selected player card
+          if (gameState.currentlySelectedPlayerCard != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text("Selected Card: ", style: Theme.of(context).textTheme.bodySmall),
+                  FramedCardImageWidget(
+                    card: gameState.currentlySelectedPlayerCard!,
+                    width: 30, // Adjust size as needed
+                    height: 42, // Adjust size as needed
+                  ),
+                  const SizedBox(width: 8),
+                  Text(gameState.currentlySelectedPlayerCard!.name, style: Theme.of(context).textTheme.labelMedium),
+                ],
+              ),
+            )
+          else
+            const Padding(padding: EdgeInsets.symmetric(vertical: 8.0), child: Text("No card selected for battle.", style: TextStyle(fontStyle: FontStyle.italic))),
           Expanded( // Wrap the ListView.builder in Expanded
             child: ListView.builder(
               padding: const EdgeInsets.all(16.0),

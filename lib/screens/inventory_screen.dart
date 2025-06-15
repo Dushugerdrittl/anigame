@@ -5,6 +5,7 @@ import '../card_model.dart' as app_card;
 import '../elemental_system.dart'; // Import CardType
 import '../widgets/themed_scaffold.dart'; // Import ThemedScaffold
 import 'card_detail_screen.dart'; // Import the new screen
+// Import FramedCardImageWidget
 import '../widgets/star_display_widget.dart'; // Import the StarDisplayWidget
 
 class InventoryScreen extends StatefulWidget {
@@ -298,11 +299,11 @@ class _InventoryScreenState extends State<InventoryScreen> {
 
   Color _getRarityColor(app_card.CardRarity rarity, BuildContext context) {
     switch (rarity) {
-      case app_card.CardRarity.COMMON: return Colors.grey.shade600;
-      case app_card.CardRarity.UNCOMMON: return Colors.green.shade600;
-      case app_card.CardRarity.RARE: return Colors.blue.shade600;
-      case app_card.CardRarity.SUPER_RARE: return Colors.purple.shade600;
-      case app_card.CardRarity.ULTRA_RARE: return Colors.orange.shade700;
+      case app_card.CardRarity.COMMON: return app_card.kCommonColor;
+      case app_card.CardRarity.UNCOMMON: return app_card.kUncommonColor;
+      case app_card.CardRarity.RARE: return app_card.kRareColor;
+      case app_card.CardRarity.SUPER_RARE: return app_card.kSuperRareColor;
+      case app_card.CardRarity.ULTRA_RARE: return app_card.kUltraRareColor;
     }
   }
 
