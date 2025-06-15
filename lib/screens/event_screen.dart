@@ -95,7 +95,7 @@ class _EventScreenState extends State<EventScreen> {
 
                       return Card(
                         margin: const EdgeInsets.all(8.0),
-                        color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.8),
+                        color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.8),
                         child: ListTile(
                           leading: FramedCardImageWidget(
                             card: boss,

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_core/firebase_core.dart'; // Import Firebase Core
+import 'firebase_options.dart'; // Import generated Firebase options
 import 'game_state.dart';
 // Import your screens
 import 'screens/home_screen.dart';
@@ -17,10 +19,16 @@ import 'screens/event_screen.dart'; // Import the actual EventScreen
 import 'screens/raid_battle_screen.dart'; // Import RaidBattleScreen
 import 'screens/raid_lobby_screen.dart'; // Import RaidLobbyScreen
 import 'screens/user_profile_screen.dart'; // Import UserProfileScreen
+import 'screens/login_screen.dart'; // Import LoginScreen
+import 'screens/register_screen.dart'; // Import RegisterScreen
 import 'widgets/themed_scaffold.dart'; // Import ThemedScaffold
 
-void main() {
-  runApp(
+void main() async { // Make main async
+  WidgetsFlutterBinding.ensureInitialized(); // Ensure Flutter bindings are initialized
+  await Firebase.initializeApp( // Initialize Firebase
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  runApp( // Your existing runApp call
     ChangeNotifierProvider(
       create: (context) => GameState(),
       child: const MyApp(),
@@ -84,10 +92,12 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           // primaryContainer: Colors.deepPurple.shade100, // Example
         ),
         useMaterial3: true,
-        scaffoldBackgroundColor: Colors.transparent, // Default scaffold is transparent
+        // scaffoldBackgroundColor: Colors.transparent, // Default scaffold is transparent (Handled by ThemedScaffold)
         appBarTheme: AppBarTheme(
           backgroundColor: ColorScheme.fromSeed(seedColor: Colors.deepPurple).primaryContainer, // Consistent AppBar color
         ),
+        inputDecorationTheme: const InputDecorationTheme(filled: true, fillColor: Colors.white24)
+
       ),
       initialRoute: '/', // Use initialRoute for clarity
       routes: {
@@ -110,10 +120,17 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           return RaidLobbyScreen(raidId: raidId);
         },
         '/raid_battle': (context) { // Route for RaidBattleScreen
-          final raidId = ModalRoute.of(context)!.settings.arguments as String?;
-          if (raidId == null) return const PlaceholderScreen(title: "Error: Raid ID missing for battle");
-          return RaidBattleScreen(raidId: raidId);
-        }
+          final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
+          if (args == null || args['raidId'] == null || args['playerTeamCardIds'] == null) {
+            return const PlaceholderScreen(title: "Error: Missing arguments for battle");
+          }
+          return RaidBattleScreen(
+            raidId: args['raidId'] as String,
+            playerTeamCardIds: args['playerTeamCardIds'] as List<String>,
+          );
+        },
+        '/login': (context) => const LoginScreen(),
+        '/register': (context) => const RegisterScreen(),
       },
     );
   }

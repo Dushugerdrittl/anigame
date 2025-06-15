@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "729032745242",
+    "project_id": "anigame-a8b61",
+    "storage_bucket": "anigame-a8b61.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:729032745242:android:072b165ef425a16e3f0ca3",
+        "android_client_info": {
+          "package_name": "com.example.anigame"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBugvk4HhE_T2zQJbuc_7oogYVI4RDK2CU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

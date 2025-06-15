@@ -7,14 +7,15 @@ import 'dart:async'; // For Timer
 import 'data/card_supply_data.dart'; // Import the new card supply data
 import 'data/card_definitions.dart'; // Import the new card definitions
 import 'models/floor_model.dart'; // Import Floor model
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:collection/collection.dart'; // Import for firstWhereOrNull
 import 'utils/rarity_stats_util.dart'; // Import the new utility
+import 'package:cloud_firestore/cloud_firestore.dart'; // Import Cloud Firestore
 import 'utils/leveling_cost_util.dart'; // Import leveling cost utility
 import 'utils/enemy_difficulty_scaler.dart'; // Import the new difficulty scaler
 import 'data/floor_definitions.dart'; // Import Floor definitions
 import 'event_logic.dart'; // Import RaidEvent logic
-import 'package:uuid/uuid.dart'; // For generating unique player ID
+// For generating unique player ID
+import 'package:firebase_auth/firebase_auth.dart' as fb_auth; // Import Firebase Auth
 
 class GameState extends ChangeNotifier {
   Card? playerCard; // This will be a COPY of the selected card for the current battle
@@ -75,8 +76,14 @@ class GameState extends ChangeNotifier {
   Timer? _commonUncommonRareRaidSpawnTimer;
   static const int MAX_ACTIVE_RAIDS = 10; // Example limit for total active raids
 
-  String _currentPlayerId = ""; // Internal storage for player ID
+  // _currentPlayerId will now be the Firebase User UID
+  String _currentPlayerId = ""; 
   String get currentPlayerId => _currentPlayerId; // Public getter
+  
+  // _isUserLoggedIn will be determined by Firebase Auth state
+  bool _isUserLoggedIn = false;
+  bool get isUserLoggedIn => _isUserLoggedIn;
+
 
   // --- Gold Shop Card Getters ---
   List<Card> _getShopCardsByRarity(CardRarity rarity) {
@@ -127,7 +134,10 @@ class GameState extends ChangeNotifier {
 
   GameState() {
     // Load game state when GameState is created
-    loadGameState();
+    // _checkLoginStatusAndLoad(); // This will be replaced by listening to auth state changes
+    _listenToAuthStateChanges(); // New method to listen to Firebase Auth
+
+    // Raid spawners can start, but data loading will depend on user login
     _startRaidSpawnersAndUpdaters();
     _spawnInitialTestRaids(); // For testing
   }
@@ -144,7 +154,8 @@ class GameState extends ChangeNotifier {
     _activeRaidEvents.clear(); // Clear active raids on reset
     _highestUnlockedLevelPerFloor.clear();
     _completedLevelsPerFloor.clear();
-    // _currentPlayerId remains as it's a persistent identifier unless explicitly reset
+    _currentPlayerId = ""; // Reset current player ID on full game reset
+    _isUserLoggedIn = false;
 
     // Re-initialize to starting conditions
     _initializeUserInventory(); // This also sets _currentlySelectedPlayerCard
@@ -159,6 +170,30 @@ class GameState extends ChangeNotifier {
     _logMessage("Game progress has been reset to default.");
     notifyListeners();
     saveGameState(); // Save the reset state
+  }
+
+  void _listenToAuthStateChanges() {
+    fb_auth.FirebaseAuth.instance.authStateChanges().listen((fb_auth.User? user) async {
+      if (user == null) {
+        _logMessage('User is currently signed out!');
+        _isUserLoggedIn = false;
+        _currentPlayerId = "";
+        // Optionally, reset parts of game state or load a "guest" state
+        // Clear local in-memory state
+        _userOwnedCards.clear();
+        _playerShards.clear();
+        _playerCurrency = 0; _playerDiamonds = 0; _playerSouls = 0;
+        _initializeUserInventory(); // Reset to default starter inventory
+        _initializePlayerShards();
+        _logMessage("User signed out. Local game state reset.");
+      } else {
+        _logMessage('User is signed in! UID: ${user.uid}');
+        _isUserLoggedIn = true;
+        _currentPlayerId = user.uid;
+        await loadGameState(); // Load game data for this Firebase user
+      }
+      notifyListeners();
+    });
   }
 
   void _startRaidSpawnersAndUpdaters() {
@@ -267,6 +302,12 @@ class GameState extends ChangeNotifier {
       originalSpeed: rarityAdjustedStats['speed']!, // Store rarity-adjusted base speed
       originalMaxHp: rarityAdjustedStats['hp']!, // Store rarity-adjusted base max HP
     );
+  }
+
+  // Public wrapper for _copyCard, specifically for battle instances
+  Card copyCardForBattle(Card template) {
+    // For battle, we typically want a fresh copy with current stats, rarity, and level
+    return _copyCard(template, template.rarity, template.level);
   }
 
   Card? _mintCardInstanceByTemplateId(String templateId, CardRarity rarityToMint, {int initialLevel = 1}) {
@@ -1448,144 +1489,209 @@ class GameState extends ChangeNotifier {
   }
 
   Future<void> saveGameState() async {
-    final prefs = await SharedPreferences.getInstance();
+    if (!_isUserLoggedIn || _currentPlayerId.isEmpty) {
+      _logMessage("Cannot save game state: User not logged in or player ID is empty.");
+      return;
+    }
 
-    await prefs.setInt('playerCurrency', _playerCurrency);
-    await prefs.setInt('playerDiamonds', _playerDiamonds);
-    await prefs.setInt('playerSouls', _playerSouls);
+    _logMessage("Attempting to save game state for user: $_currentPlayerId to Firestore.");
+    try {
+      DocumentReference userDocRef = FirebaseFirestore.instance.collection('users').doc(_currentPlayerId);
 
-    List<String> ownedCardsJson = _userOwnedCards.map((card) => cardToJson(card)).toList().cast<String>();
-    await prefs.setStringList('userOwnedCards', ownedCardsJson);
+      Map<String, dynamic> userData = {
+        'playerCurrency': _playerCurrency,
+        'playerDiamonds': _playerDiamonds,
+        'playerSouls': _playerSouls,
+        'userOwnedCards': _userOwnedCards.map((card) => cardToJson(card)).whereType<String>().toList(),
+        'playerShards': _playerShards.map((key, value) => MapEntry(key.index.toString(), value)), // Store enum index as string key
+        'mintedCardCounts': _mintedCardCounts.map((templateId, rarityMap) =>
+            MapEntry(templateId, rarityMap.map((rarity, count) => MapEntry(rarity.index.toString(), count)))),
+        'unlockedFloorIds': _unlockedFloorIds.toList(),
+        'completedFloorIds': _completedFloorIds.toList(),
+        'highestUnlockedLevelPerFloor': _highestUnlockedLevelPerFloor,
+        'completedLevelsPerFloor': _completedLevelsPerFloor.map((key, value) => MapEntry(key, value.toList())),
+        'lastSaveTimestamp': FieldValue.serverTimestamp(),
+      };
 
-    List<String> shardsJson = _playerShards.entries.map((e) => '${e.key.index}:${e.value}').toList();
-    await prefs.setStringList('playerShards', shardsJson);
-
-    List<String> mintedCountsJson = _mintedCardCounts.entries.map((entry) {
-      String rarityCounts = entry.value.entries.map((e) => '${e.key.index}:${e.value}').join(',');
-      return '${entry.key}|$rarityCounts';
-    }).toList();
-    await prefs.setStringList('mintedCardCounts', mintedCountsJson);
-
-    await prefs.setStringList('unlockedFloorIds', _unlockedFloorIds.toList());
-    await prefs.setStringList('completedFloorIds', _completedFloorIds.toList());
-
-    List<String> highestUnlockedJson = _highestUnlockedLevelPerFloor.entries.map((e) => '${e.key}:${e.value}').toList();
-    await prefs.setStringList('highestUnlockedLevelPerFloor', highestUnlockedJson);
-
-    List<String> completedLevelsJson = _completedLevelsPerFloor.entries.map((e) {
-      String levels = e.value.join(',');
-      return '${e.key}|$levels';
-    }).toList();
-    await prefs.setStringList('completedLevelsPerFloor', completedLevelsJson);
-    await prefs.setString('currentPlayerId', _currentPlayerId); // Save player ID
-    notifyListeners();
+      await userDocRef.set(userData, SetOptions(merge: true)); // Use merge to avoid overwriting fields not included here
+      _logMessage("Game state saved to Firestore for user: $_currentPlayerId");
+    } catch (e) {
+      _logMessage("Error saving game state to Firestore for user $_currentPlayerId: $e");
+    }
+    // notifyListeners(); // Usually not needed on save unless UI depends on save status
   }
 
   Future<void> loadGameState() async {
-    final prefs = await SharedPreferences.getInstance();
-
-    _playerCurrency = prefs.getInt('playerCurrency') ?? 500;
-    _playerDiamonds = prefs.getInt('playerDiamonds') ?? 10;
-    _playerSouls = prefs.getInt('playerSouls') ?? 1000;
-
-    _currentPlayerId = prefs.getString('currentPlayerId') ?? "";
-    if (_currentPlayerId.isEmpty) {
-      _currentPlayerId = const Uuid().v4(); // Generate a new unique ID
-      await prefs.setString('currentPlayerId', _currentPlayerId); // Save it immediately
-      _logMessage("New player ID generated and saved: $_currentPlayerId");
-    }
-
-    List<String>? ownedCardsJson = prefs.getStringList('userOwnedCards');
-    if (ownedCardsJson != null && ownedCardsJson.isNotEmpty) {
-      _userOwnedCards.clear();
-      _userOwnedCards.addAll(ownedCardsJson.map((json) => cardFromJson(json)).whereType<Card>().toList());
-      if (_userOwnedCards.isEmpty) {
-        _initializeUserInventory();
-      } else {
-         _currentlySelectedPlayerCard = _userOwnedCards.isNotEmpty ? _userOwnedCards[0] : null;
-      }
-    } else {
+    if (!_isUserLoggedIn || _currentPlayerId.isEmpty) {
+      _logMessage("Cannot load game state: User not logged in or player ID is empty.");
       _initializeUserInventory();
+      _initializePlayerShards();
+      return;
     }
 
-    List<String>? shardsJson = prefs.getStringList('playerShards');
-    _playerShards.clear();
-    _initializePlayerShards();
-    if (shardsJson != null) {
-      for (String entry in shardsJson) {
-        var parts = entry.split(':');
-        if (parts.length == 2) {
-          try {
-            _playerShards[ShardType.values[int.parse(parts[0])]] = int.parse(parts[1]);
-          } catch (e) {
-            _logMessage("Error parsing shard data: $entry. Error: $e");
-          }
+    _logMessage("Loading game state for user: $_currentPlayerId");
+    try {
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection('users').doc(_currentPlayerId).get();
+
+      if (userDoc.exists) {
+        Map<String, dynamic> data = userDoc.data() as Map<String, dynamic>;
+        _logMessage("Firestore data found for user $_currentPlayerId: $data");
+
+        _playerCurrency = data['playerCurrency'] ?? 500;
+        _playerDiamonds = data['playerDiamonds'] ?? 10;
+        _playerSouls = data['playerSouls'] ?? 1000;
+
+        List<dynamic>? ownedCardsJson = data['userOwnedCards'] as List<dynamic>?;
+        if (ownedCardsJson != null && ownedCardsJson.isNotEmpty) {
+          _userOwnedCards.clear();
+          _userOwnedCards.addAll(ownedCardsJson.map((json) => cardFromJson(json as String)).whereType<Card>().toList());
+          if (_userOwnedCards.isEmpty) _initializeUserInventory();
+          else _currentlySelectedPlayerCard = _userOwnedCards.isNotEmpty ? _userOwnedCards[0] : null;
+        } else {
+          _initializeUserInventory();
         }
-      }
-    }
 
-    List<String>? mintedCountsJson = prefs.getStringList('mintedCardCounts');
-    _mintedCardCounts.clear();
-    if (mintedCountsJson != null) {
-      for (String entry in mintedCountsJson) {
-        var parts = entry.split('|');
-        if (parts.length == 2) {
-          String templateId = parts[0];
-          Map<CardRarity, int> rarityCounts = {};
-          parts[1].split(',').forEach((rc) {
-            var rcParts = rc.split(':');
-            if (rcParts.length == 2) {
-              try {
-                rarityCounts[CardRarity.values[int.parse(rcParts[0])]] = int.parse(rcParts[1]);
-              } catch (e) {
-                _logMessage("Error parsing minted count data for $templateId: $rc. Error: $e");
-              }
+        Map<String, dynamic>? shardsData = data['playerShards'] as Map<String, dynamic>?;
+        _playerShards.clear();
+        _initializePlayerShards(); // Initialize all to 0 first
+        if (shardsData != null) {
+          shardsData.forEach((key, value) {
+            try {
+              _playerShards[ShardType.values[int.parse(key)]] = value as int;
+            } catch (e) {
+              _logMessage("Error parsing shard data from Firestore for user $_currentPlayerId: key $key. Error: $e");
             }
           });
-          _mintedCardCounts[templateId] = rarityCounts;
         }
-      }
-    }
 
-    _unlockedFloorIds.clear();
-    _unlockedFloorIds.addAll(prefs.getStringList('unlockedFloorIds') ?? (FloorDefinitions.floors.isNotEmpty ? {FloorDefinitions.floors.first.id} : {}));
-    if (_unlockedFloorIds.isEmpty && FloorDefinitions.floors.isNotEmpty) _unlockedFloorIds.add(FloorDefinitions.floors.first.id);
-
-
-    _completedFloorIds.clear();
-    _completedFloorIds.addAll(prefs.getStringList('completedFloorIds') ?? {});
-
-    _highestUnlockedLevelPerFloor.clear();
-    for (var e in (prefs.getStringList('highestUnlockedLevelPerFloor') ?? [])) {
-      var parts = e.split(':');
-      if (parts.length == 2) {
-        try {
-          _highestUnlockedLevelPerFloor[parts[0]] = int.parse(parts[1]);
-        } catch (e) {
-          _logMessage("Error parsing highest unlocked level data: $e. Error: $e");
+        Map<String, dynamic>? mintedCountsData = data['mintedCardCounts'] as Map<String, dynamic>?;
+        _mintedCardCounts.clear();
+        if (mintedCountsData != null) {
+          mintedCountsData.forEach((templateId, rarityMapDynamic) {
+            final rarityMap = rarityMapDynamic as Map<String, dynamic>;
+            Map<CardRarity, int> counts = {};
+            rarityMap.forEach((rarityIndexStr, count) {
+              try {
+                counts[CardRarity.values[int.parse(rarityIndexStr)]] = count as int;
+              } catch (e) {
+                _logMessage("Error parsing minted count rarity data for $templateId: $rarityIndexStr. Error: $e");
+              }
+            });
+            _mintedCardCounts[templateId] = counts;
+          });
         }
-      }
-    }
-     if (_highestUnlockedLevelPerFloor.isEmpty && FloorDefinitions.floors.isNotEmpty) {
-        _highestUnlockedLevelPerFloor[FloorDefinitions.floors.first.id] = 1;
-    }
-    _logMessage("[loadGameState] Loaded _highestUnlockedLevelPerFloor: $_highestUnlockedLevelPerFloor");
 
+        _unlockedFloorIds.clear();
+        _unlockedFloorIds.addAll(List<String>.from(data['unlockedFloorIds'] ?? (FloorDefinitions.floors.isNotEmpty ? [FloorDefinitions.floors.first.id] : [])));
+        if (_unlockedFloorIds.isEmpty && FloorDefinitions.floors.isNotEmpty) _unlockedFloorIds.add(FloorDefinitions.floors.first.id);
 
-    _completedLevelsPerFloor.clear();
-    for (var e in (prefs.getStringList('completedLevelsPerFloor') ?? [])) {
-      var parts = e.split('|');
-      if (parts.length == 2) {
-        try {
-          _completedLevelsPerFloor[parts[0]] = parts[1].split(',').where((s) => s.isNotEmpty).map((s) => int.parse(s)).toSet();
-        } catch (e) {
-          _logMessage("Error parsing completed levels data: $e. Error: $e");
+        _completedFloorIds.clear();
+        _completedFloorIds.addAll(List<String>.from(data['completedFloorIds'] ?? []));
+
+        _highestUnlockedLevelPerFloor.clear();
+        Map<String, dynamic>? highestUnlockedData = data['highestUnlockedLevelPerFloor'] as Map<String, dynamic>?;
+        if (highestUnlockedData != null) {
+          highestUnlockedData.forEach((key, value) {
+            _highestUnlockedLevelPerFloor[key] = value as int;
+          });
         }
-      }
-    }
+        if (_highestUnlockedLevelPerFloor.isEmpty && FloorDefinitions.floors.isNotEmpty) {
+          _highestUnlockedLevelPerFloor[FloorDefinitions.floors.first.id] = 1;
+        }
 
-    _logMessage("Game state loaded.");
+        _completedLevelsPerFloor.clear();
+        Map<String, dynamic>? completedLevelsData = data['completedLevelsPerFloor'] as Map<String, dynamic>?;
+        if (completedLevelsData != null) {
+          completedLevelsData.forEach((key, value) {
+            _completedLevelsPerFloor[key] = Set<int>.from(value as List<dynamic>);
+          });
+        }
+        _logMessage("Game state loaded from Firestore for user: $_currentPlayerId");
+      } else {
+        _logMessage("No Firestore document found for user $_currentPlayerId. Initializing new game state.");
+        _initializeUserInventory();
+        _initializePlayerShards();
+        _playerCurrency = 500; _playerDiamonds = 10; _playerSouls = 1000; // Default currencies
+        if (gameFloors.isNotEmpty) {
+          _unlockedFloorIds.add(gameFloors.first.id);
+          _highestUnlockedLevelPerFloor[gameFloors.first.id] = 1;
+        }
+        // Save this initial state to Firestore so it exists for next time
+        await saveGameState();
+      }
+    } catch (e) {
+      _logMessage("Error loading game state from Firestore for user $_currentPlayerId: $e. Initializing local defaults.");
+      // Fallback to local defaults if Firestore fails
+      _initializeUserInventory();
+      _initializePlayerShards();
+      _playerCurrency = 500; _playerDiamonds = 10; _playerSouls = 1000;
+       if (gameFloors.isNotEmpty) {
+          _unlockedFloorIds.add(gameFloors.first.id);
+          _highestUnlockedLevelPerFloor[gameFloors.first.id] = 1;
+        }
+    }
     notifyListeners();
+  }
+
+  // --- Authentication Methods (Simple Local Version) ---
+  Future<bool> registerUser(String username, String password) async {
+    try {
+      String email = "$username@anigame.app"; // Construct a dummy email
+      fb_auth.UserCredential userCredential = await fb_auth.FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      // After successful Firebase registration, _listenToAuthStateChanges will trigger.
+      // loadGameState will then be called, and if no document exists, it will create one.
+      _logMessage("User '$username' (email: $email) registered successfully with Firebase.");
+      // We don't need to manually call loadGameState or saveGameState here,
+      // as the auth state listener will handle it.
+      return true;
+    } on fb_auth.FirebaseAuthException catch (e) {
+      if (e.code == 'weak-password') {
+        _logMessage('Registration failed: The password provided is too weak.');
+      } else if (e.code == 'email-already-in-use') {
+        _logMessage('Registration failed: The account already exists for that email/username.');
+      } else {
+        _logMessage('Registration failed: ${e.message}');
+      }
+      return false;
+    } catch (e) {
+      _logMessage('Registration failed with unknown error: $e');
+      return false;
+    }
+  }
+
+  Future<bool> loginUser(String username, String password) async {
+    try {
+      String email = "$username@anigame.app"; // Construct the dummy email used for registration
+      await fb_auth.FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      // _listenToAuthStateChanges will handle setting _currentPlayerId, _isUserLoggedIn, and loading data.
+      // loadGameState will be called by the listener.
+      _logMessage("User '$username' (email: $email) logged in successfully with Firebase.");
+      return true;
+    } on fb_auth.FirebaseAuthException catch (e) {
+      if (e.code == 'user-not-found' || e.code == 'wrong-password' || e.code == 'invalid-credential') {
+        _logMessage('Login failed: Invalid credentials for $username.');
+      } else {
+        _logMessage('Login failed: ${e.message}');
+      }
+      return false;
+    } catch (e) {
+      _logMessage('Login failed with unknown error: $e');
+      return false;
+    }
+  }
+
+  Future<void> logoutUser() async {
+    if (!_isUserLoggedIn) return;
+    await saveGameState(); // Save current user's state before logging out
+    await fb_auth.FirebaseAuth.instance.signOut();
+    // _listenToAuthStateChanges will handle resetting state.
+    _logMessage("User '$_currentPlayerId' logged out.");
   }
 
   // --- Raid Event Management ---
@@ -1735,6 +1841,26 @@ class GameState extends ChangeNotifier {
     return raid?.startBattle(starterId) ?? false;
   }
 
+  // Method for a player dealing damage to a raid boss
+  bool dealDamageToRaidBoss(String raidId, String playerId, int damageAmount) {
+    final raid = _activeRaidEvents.firstWhereOrNull((r) => r.id == raidId);
+    if (raid != null && raid.status == RaidEventStatus.battleInProgress) {
+      if (raid.bossCard.currentHp <= 0) { // Boss already defeated
+        _logMessage("Boss ${raid.bossCard.name} (ID: $raidId) already defeated. No damage applied.");
+        return false;
+      }
+      raid.bossCard.takeDamage(damageAmount);
+      _logMessage("$playerId dealt $damageAmount damage to raid boss ${raid.bossCard.name} (ID: $raidId). Boss HP: ${raid.bossCard.currentHp}");
+      if (raid.bossCard.currentHp <= 0) {
+        raid.completeRaid(true); // Mark raid as success
+        _logMessage("Raid boss ${raid.bossCard.name} (ID: $raidId) defeated by collective effort!");
+      }
+      notifyListeners(); // Notify to update boss HP in UI if displayed elsewhere or for battle screen
+      return true;
+    }
+    return false;
+  }
+
   @override
   void dispose() {
     _raidEventStatusUpdaterTimer?.cancel();
@@ -1743,7 +1869,6 @@ class GameState extends ChangeNotifier {
     _commonUncommonRareRaidSpawnTimer?.cancel();
     super.dispose();
   }
-
 
   // Note: cardToJson and cardFromJson methods are expected to be in card_model.dart
 }

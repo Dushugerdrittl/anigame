@@ -38,6 +38,9 @@ dependencies:
   collection: ^1.17.0
   shared_preferences: ^2.0.0
   uuid: ^4.3.3 # Add this line
+  firebase_core: ^3.3.0 # Add Firebase Core
+  firebase_auth: ^5.2.0 # Add Firebase Auth
+  cloud_firestore: ^5.1.0 # Add Cloud Firestore
 
 
 dev_dependencies:

@@ -24,6 +24,8 @@ class _RaidLobbyScreenState extends State<RaidLobbyScreen> {
   String _currentPlayerId = "player_123_test"; // Placeholder
 
   Timer? _timer;
+  // Store selected cards for the team
+  final List<app_card.Card?> _selectedTeamCards = List.filled(3, null);
 
   @override
   void initState() {
@@ -36,6 +38,13 @@ class _RaidLobbyScreenState extends State<RaidLobbyScreen> {
       final raid = gameState.activeRaidEvents.firstWhereOrNull((r) => r.id == widget.raidId);
       if (raid != null && raid.status == RaidEventStatus.lobbyOpen && !raid.playersInLobby.contains(_currentPlayerId)) {
         gameState.joinRaidLobby(widget.raidId, _currentPlayerId);
+      }
+
+      // Pre-fill team with first available cards if slots are empty
+      for (int i = 0; i < _selectedTeamCards.length; i++) {
+        if (_selectedTeamCards[i] == null && gameState.userOwnedCards.length > i) {
+          _selectedTeamCards[i] = gameState.userOwnedCards[i];
+        }
       }
     });
 
@@ -90,7 +99,10 @@ class _RaidLobbyScreenState extends State<RaidLobbyScreen> {
 
     final app_card.Card boss = raidEvent.bossCard;
     final bool isLeader = raidEvent.lobbyLeaderId == _currentPlayerId;
-    final bool canStart = isLeader && raidEvent.playersInLobby.length >= raidEvent.minPlayersNeededToWin;
+    // Player must have at least one card selected to start
+    final bool hasSelectedAtLeastOneCard = _selectedTeamCards.any((card) => card != null);
+    final bool canStart = isLeader && raidEvent.playersInLobby.length >= raidEvent.minPlayersNeededToWin && hasSelectedAtLeastOneCard;
+
 
     String timeRemainingString;
     if (raidEvent.status == RaidEventStatus.lobbyOpen) {
@@ -134,6 +146,40 @@ class _RaidLobbyScreenState extends State<RaidLobbyScreen> {
               ),
               const SizedBox(height: 20),
 
+              // Player Team Selection Area
+              Text("Your Raid Team:", style: Theme.of(context).textTheme.titleLarge),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: List.generate(3, (index) {
+                  final card = _selectedTeamCards[index];
+                  return GestureDetector(
+                    onTap: () => _showCardSelectionDialog(context, index),
+                    child: Container(
+                      width: 85,
+                      height: 145,
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey.shade600),
+                        borderRadius: BorderRadius.circular(8),
+                        color: Colors.black.withOpacity(0.2),
+                      ),
+                      child: card != null
+                          ? Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                FramedCardImageWidget(card: card, width: 70, height: 100),
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 4.0),
+                                  child: Text(card.name, style: const TextStyle(fontSize: 10), textAlign: TextAlign.center, overflow: TextOverflow.ellipsis),
+                                ),
+                              ],
+                            )
+                          : const Center(child: Icon(Icons.add_circle_outline, size: 30, color: Colors.grey)),
+                    ),
+                  );
+                }),
+              ),
+              const SizedBox(height: 20),
               // Player List
               Text("Players (${raidEvent.playersInLobby.length}/$MAX_PLAYERS_IN_LOBBY):", style: Theme.of(context).textTheme.titleLarge),
               const SizedBox(height: 8),
@@ -189,10 +235,17 @@ class _RaidLobbyScreenState extends State<RaidLobbyScreen> {
                         onPressed: canStart
                             ? () {
                                 bool success = gameState.startRaidBattle(widget.raidId, _currentPlayerId);
-                                if (success) {
-                                  // Navigate to the actual battle screen for this raid
-                                  Navigator.popAndPushNamed(context, '/raid_battle', arguments: widget.raidId);
+                                if (success && mounted) {
+                                  // Prepare team from selected cards
+                                  List<String> teamCardIds = _selectedTeamCards
+                                      .where((card) => card != null) // Filter out nulls
+                                      .map((card) => card!.id)
+                                      .toList();
 
+                                  Navigator.popAndPushNamed(context, '/raid_battle', arguments: {
+                                    'raidId': widget.raidId,
+                                    'playerTeamCardIds': teamCardIds,
+                                  });
                                 } else {
                                    ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(content: Text("Failed to start raid. Conditions not met.")),
@@ -209,6 +262,56 @@ class _RaidLobbyScreenState extends State<RaidLobbyScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  void _showCardSelectionDialog(BuildContext context, int teamSlotIndex) {
+    final gameState = Provider.of<GameState>(context, listen: false);
+    // Filter out cards already selected in other slots
+    final availableCardsForSlot = gameState.userOwnedCards.where((ownedCard) {
+      return !_selectedTeamCards.any((selectedCard) => selectedCard != null && selectedCard.id == ownedCard.id && _selectedTeamCards.indexOf(selectedCard) != teamSlotIndex);
+    }).toList();
+
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: Text("Select Card for Slot ${teamSlotIndex + 1}"),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ListView.builder(
+              itemCount: availableCardsForSlot.length + 1, // +1 for "Remove Card" option
+              itemBuilder: (context, index) {
+                if (index == availableCardsForSlot.length) {
+                  // "Remove Card" option
+                  return ListTile(
+                    leading: const Icon(Icons.remove_circle_outline, color: Colors.redAccent),
+                    title: const Text("Remove Card from Slot"),
+                    onTap: () {
+                      setState(() {
+                        _selectedTeamCards[teamSlotIndex] = null;
+                      });
+                      Navigator.of(dialogContext).pop();
+                    },
+                  );
+                }
+                final card = availableCardsForSlot[index];
+                return ListTile(
+                  leading: FramedCardImageWidget(card: card, width: 40, height: 60),
+                  title: Text(card.name),
+                  subtitle: Text("Lvl: ${card.level} - ${card.rarity.name}"),
+                  onTap: () {
+                    setState(() {
+                      _selectedTeamCards[teamSlotIndex] = card;
+                    });
+                    Navigator.of(dialogContext).pop();
+                  },
+                );
+              },
+            ),
+          ),
+        );
+      },
     );
   }
 }

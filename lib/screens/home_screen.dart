@@ -4,12 +4,29 @@ import '../card_model.dart'; // For ShardType
 import '../game_state.dart';
 import '../widgets/themed_scaffold.dart'; // Import ThemedScaffold
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  // mounted check is now valid here
 
   @override
   Widget build(BuildContext context) {
     final gameState = context.watch<GameState>();
+
+    // If user is not logged in, redirect to login screen
+    // This check should ideally be at a higher level in your app's widget tree (e.g., in main.dart or a wrapper widget)
+    if (!gameState.isUserLoggedIn) {
+      // Use WidgetsBinding to schedule navigation after the current build cycle
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) Navigator.pushReplacementNamed(context, '/login');
+      });
+      return const ThemedScaffold(body: Center(child: CircularProgressIndicator())); // Show loading while redirecting
+    }
 
     return ThemedScaffold( // Use ThemedScaffold
       appBar: AppBar(

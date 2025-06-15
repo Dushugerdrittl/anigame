@@ -6,6 +6,7 @@ class FramedCardImageWidget extends StatelessWidget {
   final double width;
   final double height;
   final BoxFit fit;
+  final Color? frameColorOverride;
 
   const FramedCardImageWidget({
     super.key,
@@ -13,6 +14,7 @@ class FramedCardImageWidget extends StatelessWidget {
     this.width = 70, // Default width
     this.height = 90, // Default height
     this.fit = BoxFit.cover,
+    this.frameColorOverride,
   });
 
   @override
@@ -20,22 +22,27 @@ class FramedCardImageWidget extends StatelessWidget {
     Color imageFrameColor;
     double imageFrameWidth = 1.5;
 
-    switch (card.rarity) {
-      case app_card.CardRarity.RARE:
-        imageFrameColor = app_card.kRareColor;
-        imageFrameWidth = 2.0;
-        break;
-      case app_card.CardRarity.SUPER_RARE:
-        imageFrameColor = app_card.kSuperRareColor;
-        imageFrameWidth = 2.5;
-        break;
-      case app_card.CardRarity.ULTRA_RARE:
-        imageFrameColor = app_card.kUltraRareColor;
-        imageFrameWidth = 3.0;
-        break;
-      default:
-        imageFrameColor = Colors.transparent;
-        imageFrameWidth = 0.0;
+    if (frameColorOverride != null) {
+      imageFrameColor = frameColorOverride!;
+      imageFrameWidth = 2.0; // Default active frame width
+    } else {
+      switch (card.rarity) {
+        case app_card.CardRarity.RARE:
+          imageFrameColor = app_card.kRareColor;
+          imageFrameWidth = 2.0;
+          break;
+        case app_card.CardRarity.SUPER_RARE:
+          imageFrameColor = app_card.kSuperRareColor;
+          imageFrameWidth = 2.5;
+          break;
+        case app_card.CardRarity.ULTRA_RARE:
+          imageFrameColor = app_card.kUltraRareColor;
+          imageFrameWidth = 3.0;
+          break;
+        default:
+          imageFrameColor = Colors.transparent;
+          imageFrameWidth = 0.0;
+      }
     }
 
     return Container(
