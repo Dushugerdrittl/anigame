@@ -1,3 +1,4 @@
+import 'package:anigame/utils/dev_admin_tools.dart';
 import 'package:flutter/foundation.dart';
 import 'card_model.dart';
 import 'elemental_system.dart';
@@ -15,6 +16,7 @@ import 'utils/enemy_difficulty_scaler.dart'; // Import the new difficulty scaler
 import 'data/floor_definitions.dart'; // Import Floor definitions
 import 'event_logic.dart'; // Import RaidEvent logic
 // For generating unique player ID
+// Import DevAdminTools
 import 'package:firebase_auth/firebase_auth.dart' as fb_auth; // Import Firebase Auth
 
 class GameState extends ChangeNotifier {
@@ -79,6 +81,7 @@ class GameState extends ChangeNotifier {
   // _currentPlayerId will now be the Firebase User UID
   String _currentPlayerId = ""; 
   String get currentPlayerId => _currentPlayerId; // Public getter
+  String _currentAuthUsername = ""; // To store the username used for login/registration
   
   // _isUserLoggedIn will be determined by Firebase Auth state
   bool _isUserLoggedIn = false;
@@ -140,6 +143,10 @@ class GameState extends ChangeNotifier {
     // Raid spawners can start, but data loading will depend on user login
     _startRaidSpawnersAndUpdaters();
     _spawnInitialTestRaids(); // For testing
+
+    // DEV: Add currency to user "suger"
+    // Make sure DevAdminTools is imported.
+    // DevAdminTools.addCurrencyToUser(this, "astolf", gold: 99999, diamonds: 99999, allShardsAmount: 999999, souls: 99999);
   }
 
   void resetToDefaultState() {
@@ -156,6 +163,7 @@ class GameState extends ChangeNotifier {
     _completedLevelsPerFloor.clear();
     _currentPlayerId = ""; // Reset current player ID on full game reset
     _isUserLoggedIn = false;
+    _currentAuthUsername = ""; // Reset auth username
 
     // Re-initialize to starting conditions
     _initializeUserInventory(); // This also sets _currentlySelectedPlayerCard
@@ -178,6 +186,7 @@ class GameState extends ChangeNotifier {
         _logMessage('User is currently signed out!');
         _isUserLoggedIn = false;
         _currentPlayerId = "";
+        _currentAuthUsername = ""; // Clear auth username on sign out
         // Optionally, reset parts of game state or load a "guest" state
         // Clear local in-memory state
         _userOwnedCards.clear();
@@ -191,6 +200,10 @@ class GameState extends ChangeNotifier {
         _isUserLoggedIn = true;
         _currentPlayerId = user.uid;
         await loadGameState(); // Load game data for this Firebase user
+        // If _currentAuthUsername is empty after load and user is new, it might need to be set
+        // For existing users, loadGameState should populate it.
+        // If it's still empty, it means it wasn't in Firestore.
+        // The username used for login isn't directly available from `user.uid` here.
       }
       notifyListeners();
     });
@@ -516,6 +529,8 @@ class GameState extends ChangeNotifier {
   }
 
   void _logMessage(String message) {
+    // ignore: avoid_print
+    if (kDebugMode) print(message); // Print to console in debug mode
     battleLog.insert(0, message);
     if (battleLog.length > 100) { // Increased log size for better debugging
       battleLog.removeLast();
@@ -1264,10 +1279,16 @@ class GameState extends ChangeNotifier {
     final sacrificeCard = _userOwnedCards[sacrificeCardIndex];
     _userOwnedCards.removeAt(sacrificeCardIndex);
 
-    cardToEvolve.evolutionLevel++;
+    cardToEvolve.evolutionLevel++; 
+    _logMessage("${cardToEvolve.name} evolved to Evo ${cardToEvolve.evolutionLevel} by sacrificing ${sacrificeCard.name}! Stats boosted. Level reset to 1.");
     cardToEvolve.level = 1;
 
-    final commonBaseTemplate = CardDefinitions.availableCards.firstWhere((c) => c.id == cardToEvolve.originalTemplateId);
+    final commonBaseTemplate = CardDefinitions.availableCards.firstWhereOrNull((c) => c.id == cardToEvolve.originalTemplateId);
+    if (commonBaseTemplate == null) {
+      _logMessage("Error: Could not find base template ${cardToEvolve.originalTemplateId} for evolution stat calculation of ${cardToEvolve.name}.");
+      // Potentially revert resource costs or handle error more gracefully
+      return false;
+    }
     final rarityAdjustedStats = RarityStatsUtil.calculateStatsForRarity(
       baseHp: commonBaseTemplate.maxHp,
       baseAttack: commonBaseTemplate.attack,
@@ -1284,20 +1305,29 @@ class GameState extends ChangeNotifier {
     cardToEvolve.speed = (rarityAdjustedStats['speed']! * evolutionStatMultiplier).round();
     cardToEvolve.currentHp = cardToEvolve.maxHp;
 
-    _logMessage("${cardToEvolve.name} evolved to Evo ${cardToEvolve.evolutionLevel} by sacrificing ${sacrificeCard.name}! Stats boosted. Level reset to 1.");
     notifyListeners();
     saveGameState();
     return true;
   }
 
   bool canAscend(Card card) {
+  _logMessage("!!!!!!!!!! CAN ASCEND METHOD CALLED FOR: ${card.name} !!!!!!!!!!"); // Add this test line
     if (card.rarity != CardRarity.SUPER_RARE && card.rarity != CardRarity.ULTRA_RARE) {
+      _logMessage("[canAscend Check] Failed: ${card.name} (Rarity: ${card.rarity}) is not Super Rare or Ultra Rare.");
       return false;
     }
     if (card.evolutionLevel < 3) {
+      _logMessage("[canAscend Check] Failed: ${card.name} (Evo: ${card.evolutionLevel}) is not Evolution Level 3.");
       return false;
     }
+    // Card to ascend must be at its max level for Evo 3
+    if (card.level < card.maxCardLevel) {
+      _logMessage("[canAscend Check] Failed: ${card.name} (Evo ${card.evolutionLevel}, Lvl ${card.level}) must be at max level (${card.maxCardLevel}).");
+      return false;
+    }
+
     if (card.ascensionLevel >= card.maxAscensionLevel) {
+      _logMessage("[canAscend Check] Failed: ${card.name} (Ascension: ${card.ascensionLevel}) is already at max ascension level (${card.maxAscensionLevel}).");
       return false;
     }
 
@@ -1305,23 +1335,33 @@ class GameState extends ChangeNotifier {
         ownedCard.id != card.id &&
         ownedCard.originalTemplateId == card.originalTemplateId &&
         ownedCard.rarity == card.rarity &&
-        ownedCard.evolutionLevel == 0);
+        ownedCard.evolutionLevel == 0); // Level of sacrifice Evo 0 doesn't matter
 
     if (!hasSacrificeEvo0Card) {
+      _logMessage("[canAscend Check] Failed: No suitable Evo 0 sacrifice card found for ${card.name} (Template: ${card.originalTemplateId}, Rarity: ${card.rarity}).");
       return false;
     }
 
     ShardType? elementalShardType = getElementalShardTypeFromCardType(card.type);
-    int elementalShardCost = 30 + (card.ascensionLevel * 15);
-    if (elementalShardType != null) {
-      int elementalShardsOwned = _playerShards[elementalShardType] ?? 0;
-      if (elementalShardsOwned < elementalShardCost) {
-        int deficit = elementalShardCost - elementalShardsOwned;
-        if (_playerSouls < deficit) {
-          return false;
-        }
-      }
+    // Ascension requires an elemental type for shard costs, consistent with ascendCard logic
+    if (elementalShardType == null) {
+      _logMessage("[canAscend Check] Failed: Cannot determine elemental shard type for ${card.name} (Type: ${card.type}) for ascension cost.");
+      return false;
     }
+
+    int elementalShardCost = 30 + (card.ascensionLevel * 15);
+    int elementalShardsOwned = _playerShards[elementalShardType] ?? 0;
+
+    if (elementalShardsOwned < elementalShardCost) {
+      int deficit = elementalShardCost - elementalShardsOwned;
+      if (_playerSouls < deficit) {
+        _logMessage("[canAscend Check] Failed: Not enough ${elementalShardType.toString().split('.').last.replaceAll('_', ' ')} (Have: $elementalShardsOwned, Need: $elementalShardCost) or Souls (Have: $_playerSouls, Need: $deficit) to ascend ${card.name}.");
+        return false;
+      }
+      _logMessage("[canAscend Check] Resource Info: Will use $elementalShardsOwned ${elementalShardType.toString().split('.').last.replaceAll('_', ' ')} and $deficit Souls for ${card.name} ascension.");
+    }
+
+    _logMessage("[canAscend Check] Passed: All conditions met for ${card.name}.");
     return true;
   }
 
@@ -1510,6 +1550,7 @@ class GameState extends ChangeNotifier {
         'completedFloorIds': _completedFloorIds.toList(),
         'highestUnlockedLevelPerFloor': _highestUnlockedLevelPerFloor,
         'completedLevelsPerFloor': _completedLevelsPerFloor.map((key, value) => MapEntry(key, value.toList())),
+        'username': _currentAuthUsername, // Save the auth username
         'lastSaveTimestamp': FieldValue.serverTimestamp(),
       };
 
@@ -1540,13 +1581,17 @@ class GameState extends ChangeNotifier {
         _playerCurrency = data['playerCurrency'] ?? 500;
         _playerDiamonds = data['playerDiamonds'] ?? 10;
         _playerSouls = data['playerSouls'] ?? 1000;
+        _currentAuthUsername = data['username'] ?? ""; // Load the auth username
 
         List<dynamic>? ownedCardsJson = data['userOwnedCards'] as List<dynamic>?;
         if (ownedCardsJson != null && ownedCardsJson.isNotEmpty) {
           _userOwnedCards.clear();
           _userOwnedCards.addAll(ownedCardsJson.map((json) => cardFromJson(json as String)).whereType<Card>().toList());
-          if (_userOwnedCards.isEmpty) _initializeUserInventory();
-          else _currentlySelectedPlayerCard = _userOwnedCards.isNotEmpty ? _userOwnedCards[0] : null;
+          if (_userOwnedCards.isEmpty) {
+            _initializeUserInventory();
+          } else {
+            _currentlySelectedPlayerCard = _userOwnedCards.isNotEmpty ? _userOwnedCards[0] : null;
+          }
         } else {
           _initializeUserInventory();
         }
@@ -1611,6 +1656,9 @@ class GameState extends ChangeNotifier {
         _logMessage("No Firestore document found for user $_currentPlayerId. Initializing new game state.");
         _initializeUserInventory();
         _initializePlayerShards();
+        // _currentAuthUsername would be empty here. It will be set on next successful login/register
+        // and then saved. If a user was created but never had _currentAuthUsername set before this load,
+        // it will be empty. It will be populated on their next login and save.
         _playerCurrency = 500; _playerDiamonds = 10; _playerSouls = 1000; // Default currencies
         if (gameFloors.isNotEmpty) {
           _unlockedFloorIds.add(gameFloors.first.id);
@@ -1623,6 +1671,7 @@ class GameState extends ChangeNotifier {
       _logMessage("Error loading game state from Firestore for user $_currentPlayerId: $e. Initializing local defaults.");
       // Fallback to local defaults if Firestore fails
       _initializeUserInventory();
+      _currentAuthUsername = ""; // Ensure it's clear on error
       _initializePlayerShards();
       _playerCurrency = 500; _playerDiamonds = 10; _playerSouls = 1000;
        if (gameFloors.isNotEmpty) {
@@ -1641,6 +1690,7 @@ class GameState extends ChangeNotifier {
         email: email,
         password: password,
       );
+      _currentAuthUsername = username; // Set auth username on successful registration
       // After successful Firebase registration, _listenToAuthStateChanges will trigger.
       // loadGameState will then be called, and if no document exists, it will create one.
       _logMessage("User '$username' (email: $email) registered successfully with Firebase.");
@@ -1669,6 +1719,7 @@ class GameState extends ChangeNotifier {
         email: email,
         password: password,
       );
+      _currentAuthUsername = username; // Set auth username on successful login
       // _listenToAuthStateChanges will handle setting _currentPlayerId, _isUserLoggedIn, and loading data.
       // loadGameState will be called by the listener.
       _logMessage("User '$username' (email: $email) logged in successfully with Firebase.");
@@ -1691,6 +1742,7 @@ class GameState extends ChangeNotifier {
     await saveGameState(); // Save current user's state before logging out
     await fb_auth.FirebaseAuth.instance.signOut();
     // _listenToAuthStateChanges will handle resetting state.
+    // _currentAuthUsername will be cleared by the auth state listener.
     _logMessage("User '$_currentPlayerId' logged out.");
   }
 

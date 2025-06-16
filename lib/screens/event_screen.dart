@@ -82,46 +82,60 @@ class _EventScreenState extends State<EventScreen> {
                     padding: const EdgeInsets.all(8.0),
                     itemCount: filteredRaids.length,
                     itemBuilder: (context, index) {
-                      final raidEvent = filteredRaids[index];
-                      final boss = raidEvent.bossCard;
-                      String timeRemainingString;
-                      if (raidEvent.status == RaidEventStatus.lobbyOpen) {
-                        timeRemainingString = "Lobby closes in: ${_formatDuration(raidEvent.lobbyTimeRemaining)}";
-                      } else if (raidEvent.status == RaidEventStatus.battleInProgress) {
-                        timeRemainingString = "Battle ends in: ${_formatDuration(raidEvent.battleTimeRemaining)}";
-                      } else {
-                        timeRemainingString = "Status: ${raidEvent.status.name}";
-                      }
+                      try { // Add try block to catch errors during item rendering
+                        final raidEvent = filteredRaids[index];
+                        final boss = raidEvent.bossCard;
+                        String timeRemainingString;
+                        if (raidEvent.status == RaidEventStatus.lobbyOpen) {
+                          timeRemainingString = "Lobby closes in: ${_formatDuration(raidEvent.lobbyTimeRemaining)}";
+                        } else if (raidEvent.status == RaidEventStatus.battleInProgress) {
+                          timeRemainingString = "Battle ends in: ${_formatDuration(raidEvent.battleTimeRemaining)}";
+                        } else {
+                          timeRemainingString = "Status: ${raidEvent.status.name}";
+                        }
 
-                      return Card(
-                        margin: const EdgeInsets.all(8.0),
-                        color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.8),
-                        child: ListTile(
-                          leading: FramedCardImageWidget(
-                            card: boss,
-                            width: 60, // Adjusted size
-                            height: 80, // Adjusted size
-                            fit: BoxFit.cover,
+                        return Card(
+                          margin: const EdgeInsets.all(8.0),
+                          color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.8),
+                          child: ListTile(
+                            leading: FramedCardImageWidget(
+                              card: boss,
+                              width: 60, // Adjusted size
+                              height: 80, // Adjusted size
+                              fit: BoxFit.cover,
+                            ),
+                            title: Text(boss.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                            subtitle: Text(
+                              "Rarity: ${boss.rarity.name}\n"
+                              "Talent: ${boss.talent?.name ?? 'N/A'}\n"
+                              "Players: ${raidEvent.playersInLobby.length}/$MAX_PLAYERS_IN_LOBBY\n"
+                              "Min. to Start: ${raidEvent.minPlayersNeededToWin}\n"
+                              "$timeRemainingString",
+                              style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.9)),
+                            ),
+                            isThreeLine: true,
+                            trailing: ElevatedButton(
+                              child: const Text("View Lobby"), // Or "Join Raid"
+                              onPressed: () {
+                                // Navigate to RaidLobbyScreen, passing the raidId
+                                Navigator.pushNamed(context, '/raid_lobby', arguments: raidEvent.id);
+                              },
+                            ),
                           ),
-                          title: Text(boss.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                          subtitle: Text(
-                            "Rarity: ${boss.rarity.name}\n"
-                            "Talent: ${boss.talent?.name ?? 'N/A'}\n"
-                            "Players: ${raidEvent.playersInLobby.length}/$MAX_PLAYERS_IN_LOBBY\n"
-                            "Min. to Start: ${raidEvent.minPlayersNeededToWin}\n"
-                            "$timeRemainingString",
-                            style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.9)),
+                        );
+                      } catch (e, s) {
+                        // If an error occurs rendering an item, display an error tile
+                        // and print the error to the console.
+                        // ignore: avoid_print
+                        print('Error rendering raid event at index $index: $e\n$s');
+                        return Card(
+                          color: Colors.red.withOpacity(0.5),
+                          child: ListTile(
+                            title: Text('Error loading raid: ${filteredRaids.length > index ? filteredRaids[index].id : "ID Unknown"}'),
+                            subtitle: Text(e.toString()),
                           ),
-                          isThreeLine: true,
-                          trailing: ElevatedButton(
-                            child: const Text("View Lobby"), // Or "Join Raid"
-                            onPressed: () {
-                              // Navigate to RaidLobbyScreen, passing the raidId
-                              Navigator.pushNamed(context, '/raid_lobby', arguments: raidEvent.id);
-                            },
-                          ),
-                        ),
-                      );
+                        );
+                      }
                     },
                   ),
           ),

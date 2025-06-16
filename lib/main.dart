@@ -92,16 +92,15 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           // primaryContainer: Colors.deepPurple.shade100, // Example
         ),
         useMaterial3: true,
-        // scaffoldBackgroundColor: Colors.transparent, // Default scaffold is transparent (Handled by ThemedScaffold)
         appBarTheme: AppBarTheme(
           backgroundColor: ColorScheme.fromSeed(seedColor: Colors.deepPurple).primaryContainer, // Consistent AppBar color
         ),
         inputDecorationTheme: const InputDecorationTheme(filled: true, fillColor: Colors.white24)
 
       ),
-      initialRoute: '/', // Use initialRoute for clarity
+      home: const AuthWrapper(), // Use AuthWrapper to determine initial screen
       routes: {
-        '/': (context) => const HomeScreen(),
+        // '/': (context) => const HomeScreen(), // AuthWrapper handles initial '/'
         '/inventory': (context) => const InventoryScreen(),
         '/shop_landing': (context) => const ShopLandingScreen(), // Changed route and screen
         '/gold_shop': (context) => const GoldShopScreen(), // Added GoldShopScreen route
@@ -112,8 +111,8 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         '/elements_guide': (context) => const ElementsGuideScreen(),
         '/talents_list_guide': (context) => const TalentsListGuideScreen(),
         '/user_profile': (context) => const UserProfileScreen(), // Updated route
-        '/events': (context) => const EventScreen(), // Use the actual EventScreen
         '/event_cards_shop': (context) => const EventCardsShopScreen(), // Added route
+        '/events': (context) => const EventScreen(), 
         '/raid_lobby': (context) { // Route for RaidLobbyScreen
           final raidId = ModalRoute.of(context)!.settings.arguments as String?;
           if (raidId == null) return const PlaceholderScreen(title: "Error: Raid ID missing"); // Or handle error differently
@@ -129,10 +128,29 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
             playerTeamCardIds: args['playerTeamCardIds'] as List<String>,
           );
         },
-        '/login': (context) => const LoginScreen(),
+        // Keep named routes for explicit navigation if needed
+        '/login': (context) => const LoginScreen(), 
         '/register': (context) => const RegisterScreen(),
+        '/home': (context) => const HomeScreen(),
       },
     );
+  }
+}
+
+class AuthWrapper extends StatelessWidget {
+  const AuthWrapper({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    // Listen to GameState to react to login status changes
+    final gameState = context.watch<GameState>();
+
+    // GameState's auth listener updates isUserLoggedIn based on Firebase's persisted session.
+    if (gameState.isUserLoggedIn) {
+      return const HomeScreen();
+    } else {
+      return const LoginScreen();
+    }
   }
 }
 

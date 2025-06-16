@@ -221,80 +221,83 @@ class CardDetailScreen extends StatelessWidget {
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          title: Text("Select Sacrifice Card for ${cardToAscend.name}"),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text("Ascension Costs:", style: Theme.of(context).textTheme.titleMedium),
-              if (elementalShardType != null)
-                Column(
+        // Wrap the entire AlertDialog in a StatefulBuilder
+        return StatefulBuilder(
+          builder: (BuildContext sbfDialogContext, StateSetter setDialogState) {
+            return AlertDialog(
+              title: Text("Select Sacrifice Card for ${cardToAscend.name}"),
+              content: SizedBox( // Constrain the width of the AlertDialog's content
+                width: MediaQuery.of(dialogContext).size.width * 0.8, // Or a fixed value like 300.0
+                child: Column(
+                  mainAxisSize: MainAxisSize.min, // Important for Column in Dialog
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text("- $elementalShardCost ${elementalShardType.toString().split('.').last.replaceAll('_', ' ')} (or Souls)"),
-                    Text("  (Have: ${gameState.playerShards[elementalShardType] ?? 0} Shards / ${gameState.playerSouls} Souls)", style: Theme.of(context).textTheme.bodySmall),
+                    Text("Ascension Costs:", style: Theme.of(sbfDialogContext).textTheme.titleMedium),
+                    if (elementalShardType != null)
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text("- $elementalShardCost ${elementalShardType.toString().split('.').last.replaceAll('_', ' ')} (or Souls)"),
+                          Text("  (Have: ${gameState.playerShards[elementalShardType] ?? 0} Shards / ${gameState.playerSouls} Souls)", style: Theme.of(sbfDialogContext).textTheme.bodySmall),
+                        ],
+                      ),
+                    // The legendaryShardCost Text is removed as legendaryShardCost is 0
+                    const SizedBox(height: 10),
+                    Text("Select 1 Evo 0 Duplicate to Sacrifice:", style: Theme.of(sbfDialogContext).textTheme.titleMedium),
+                    const SizedBox(height: 8),
+                    SizedBox( 
+                          height: 200, 
+                          width: double.infinity, // Make ListView take full width of parent SizedBox
+                          child: ListView.builder(
+                            shrinkWrap: true, // Still useful with fixed height parent
+                            itemCount: suitableSacrifices.length,
+                            itemBuilder: (listContext, index) { // Renamed context
+                              final sacrifice = suitableSacrifices[index];
+                              final bool isSelected = selectedSacrifice?.id == sacrifice.id;
+                              return ListTile(
+                                leading: Image.asset('assets/${sacrifice.imageUrl}', width: 40, height: 56, fit: BoxFit.contain),
+                                title: Text(sacrifice.name),
+                                subtitle: Text("Lvl: ${sacrifice.level}, Evo: ${sacrifice.evolutionLevel}, Rarity: ${sacrifice.rarity.toString().split('.').last}"),
+                                trailing: isSelected ? const Icon(Icons.check_circle, color: Colors.green) : null,
+                                onTap: () {
+                                  setDialogState(() { // Use setDialogState from the outer StatefulBuilder
+                                    selectedSacrifice = isSelected ? null : sacrifice;
+                                  });
+                                },
+                              );
+                            },
+                          ),
+                        ),
                   ],
                 ),
-              if (legendaryShardCost > 0) // Display if there's a cost, but don't tie to a specific shard type here
-                 Text("- Additional Cost for High Tier UR: $legendaryShardCost (Resource TBD)"),
-              const SizedBox(height: 10),
-              Text("Select 1 Evo 0 Duplicate to Sacrifice:", style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: 8),
-              // Use StatefulBuilder to manage the selectedSacrifice state
-              StatefulBuilder(
-                builder: (context, setState) {
-                  return SizedBox( // Constrain height for the list
-                    height: 200, // Example height, adjust as needed
-                    child: ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: suitableSacrifices.length,
-                      itemBuilder: (context, index) {
-                        final sacrifice = suitableSacrifices[index];
-                        final bool isSelected = selectedSacrifice?.id == sacrifice.id;
-                        return ListTile(
-                          leading: Image.asset('assets/${sacrifice.imageUrl}', width: 40, height: 56, fit: BoxFit.contain),
-                          title: Text(sacrifice.name),
-                          subtitle: Text("Lvl: ${sacrifice.level}, Evo: ${sacrifice.evolutionLevel}, Rarity: ${sacrifice.rarity.toString().split('.').last}"),
-                          trailing: isSelected ? const Icon(Icons.check_circle, color: Colors.green) : null,
-                          onTap: () {
-                            setState(() {
-                              selectedSacrifice = isSelected ? null : sacrifice;
-                            });
-                          },
-                        );
-                      },
-                    ),
-                  );
-                },
               ),
-            ],
-          ),
-          actions: <Widget>[
-            TextButton(
-              child: const Text('Cancel'),
-              onPressed: () => Navigator.of(dialogContext).pop(),
-            ),
-            ElevatedButton(
-              // Enable only if a sacrifice is selected and shards are sufficient
-              onPressed: (selectedSacrifice != null && canAffordResources)
-                  ? () {
-                      bool success = gameState.ascendCard(cardToAscend, selectedSacrifice!.id);
-                      Navigator.of(dialogContext).pop(); // Close the dialog
-                      if (success) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text("${cardToAscend.name} ascended!"), backgroundColor: Colors.green),
-                        );
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text("Ascension failed. Please check conditions or shard balance."), backgroundColor: Colors.red),
-                        );
-                      }
-                    }
-                  : null, // Disable if conditions not met
-              child: const Text('Ascend'),
-            ),
-          ],
+              actions: <Widget>[
+                TextButton(
+                  child: const Text('Cancel'),
+                  onPressed: () => Navigator.of(sbfDialogContext).pop(),
+                ),
+                ElevatedButton(
+                  // Enable only if a sacrifice is selected and shards are sufficient
+                  onPressed: (selectedSacrifice != null && canAffordResources)
+                      ? () {
+                          bool success = gameState.ascendCard(cardToAscend, selectedSacrifice!.id);
+                          Navigator.of(sbfDialogContext).pop(); // Close the dialog
+                          if (success) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text("${cardToAscend.name} ascended!"), backgroundColor: Colors.green),
+                            );
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text("Ascension failed. Please check conditions or shard balance."), backgroundColor: Colors.red),
+                            );
+                          }
+                        }
+                      : null, // Disable if conditions not met
+                  child: const Text('Ascend'),
+                ),
+              ],
+            );
+          }
         );
       },
     );
@@ -342,6 +345,8 @@ class CardDetailScreen extends StatelessWidget {
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
+        // For evolution, the sacrifice is fixed, so the dialog's Ascend button state doesn't need to change based on selection.
+        // No need for an outer StatefulBuilder here unless other parts of the dialog content needed to be stateful.
         return AlertDialog(
           title: Text("Evolve ${cardToEvolve.name}"),
           content: Column(
@@ -387,7 +392,7 @@ class CardDetailScreen extends StatelessWidget {
                         );
                       } else {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text("Evolution failed. Please check conditions or shard balance."), backgroundColor: Colors.red),
+                          const SnackBar(content: Text("Ascension failed. Please check conditions or shard balance."), backgroundColor: Colors.red),
                         );
                       }
                     }

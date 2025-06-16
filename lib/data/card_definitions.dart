@@ -10,7 +10,7 @@ class CardDefinitions {
       id: "naruto_uzumaki",
       originalTemplateId: "naruto_uzumaki", // Template ID is its own ID
       name: "Naruto",
-      imageUrl: "cards/naruto/Naruto.jpg",
+      imageUrl: "cards/naruto/naruto.jpg",
       maxHp: 95, attack: 23, defense: 9, speed: 14, type: CardType.FIRE,
       talent: Talent(
     name: "Berserker", // Or a more thematic name like "Nine-Tails Chakra"
@@ -24,7 +24,7 @@ class CardDefinitions {
       id: "hinata_hyuga",
       originalTemplateId: "hinata_hyuga",
       name: "Hinata Hyuga",
-      imageUrl: "cards/naruto/Hinata.jpg",
+      imageUrl: "cards/naruto/hinata.jpg",
       maxHp: 90, attack: 20, defense: 10, speed: 14, type: CardType.DARK,
       talent: Talent(
         name: TalentType.REGENERATION.toString().split('.').last,
@@ -39,7 +39,7 @@ class CardDefinitions {
       id: "sakura_haruno",
       originalTemplateId: "sakura_haruno",
       name: "Sakura",
-      imageUrl: "cards/naruto/Sakura.jpg",
+      imageUrl: "cards/naruto/sakura.jpg",
       maxHp: 105, attack: 19, defense: 13, speed: 11, type: CardType.WATER,
       talent: Talent(
         name: TalentType.REJUVENATION.toString().split('.').last,
@@ -53,7 +53,7 @@ class CardDefinitions {
       id: "kakashi_hatake",
       originalTemplateId: "kakashi_hatake",
       name: "Kakashi",
-      imageUrl: "cards/naruto/Kakashi.jpg",
+      imageUrl: "cards/naruto/kakashi.jpg",
       maxHp: 120, attack: 17, defense: 16, speed: 9, type: CardType.GRASS,
       talent: Talent(
         name: TalentType.PRECISION.toString().split('.').last,
@@ -67,7 +67,7 @@ class CardDefinitions {
       id: "itachi_uchiha",
       originalTemplateId: "itachi_uchiha",
       name: "Itachi",
-      imageUrl: "cards/naruto/Itachi.jpg",
+      imageUrl: "cards/naruto/itachi.jpg",
       maxHp: 140, attack: 15, defense: 20, speed: 7, type: CardType.GROUND,
       talent: Talent(
         name: TalentType.BLAZE.toString().split('.').last,
@@ -81,7 +81,7 @@ class CardDefinitions {
       id: "tsunade",
       originalTemplateId: "tsunade",
       name: "Tsunade",
-      imageUrl: "cards/naruto/Tsunade.jpg",
+      imageUrl: "cards/naruto/tsunade.jpg",
       maxHp: 85, attack: 21, defense: 8, speed: 18, type: CardType.ELECTRIC,
       talent: Talent(
         name: TalentType.PROTECTOR.toString().split('.').last,
@@ -95,7 +95,7 @@ class CardDefinitions {
       id: "sasuke_uchiha",
       originalTemplateId: "sasuke_uchiha",
       name: "Sasuke",
-      imageUrl: "cards/naruto/Sasuke.jpg",
+      imageUrl: "cards/naruto/sasuke.jpg",
       maxHp: 90, attack: 24, defense: 7, speed: 16, type: CardType.DARK,
       talent: Talent(
         name: TalentType.EXECUTIONER.toString().split('.').last,
@@ -109,7 +109,7 @@ class CardDefinitions {
       id: "madara_uchiha",
       originalTemplateId: "madara_uchiha",
       name: "Madara",
-      imageUrl: "cards/naruto/Madara.jpg",
+      imageUrl: "cards/naruto/madara.jpg",
       maxHp: 130, attack: 16, defense: 22, speed: 6, type: CardType.LIGHT,
       talent: Talent(
         name: TalentType.OVERLOAD.toString().split('.').last,
@@ -123,7 +123,7 @@ class CardDefinitions {
       id: "obito_uchiha",
       originalTemplateId: "obito_uchiha",
       name: "Obito",
-      imageUrl: "cards/naruto/Obito.jpg",
+      imageUrl: "cards/naruto/obito.jpg",
       maxHp: 80, attack: 22, defense: 10, speed: 13, type: CardType.FIRE,
       talent: Talent(
         name: TalentType.TIME_BOMB.toString().split('.').last,
@@ -138,7 +138,7 @@ class CardDefinitions {
       id: "monkey_d_luffy",
       originalTemplateId: "monkey_d_luffy",
       name: "Monkey D. Luffy",
-      imageUrl: "cards/one_piece/Luffy.jpg",
+      imageUrl: "cards/one_piece/luffy.jpg",
       maxHp: 110, attack: 25, defense: 12, speed: 15, type: CardType.NEUTRAL,
       talent: Talent(
         name: TalentType.ENDURANCE.toString().split('.').last,
@@ -153,7 +153,7 @@ class CardDefinitions {
       id: "roronoa_zoro",
       originalTemplateId: "roronoa_zoro",
       name: "Roronoa Zoro",
-      imageUrl: "cards/one_piece/Zoro.jpg",
+      imageUrl: "cards/one_piece/zoro.jpg",
       maxHp: 100, attack: 28, defense: 10, speed: 13, type: CardType.GROUND,
       talent: Talent(
         name: TalentType.BLOODTHIRSTER.toString().split('.').last, // Changed to BLOODTHIRSTER
@@ -167,7 +167,7 @@ class CardDefinitions {
       id: "nami",
       originalTemplateId: "nami",
       name: "Nami",
-      imageUrl: "cards/one_piece/Nami.jpg",
+      imageUrl: "cards/one_piece/nami.jpg",
       maxHp: 85, attack: 18, defense: 8, speed: 16, type: CardType.ELECTRIC,
       talent: Talent(
         name: TalentType.PARALYSIS.toString().split('.').last,
@@ -181,7 +181,7 @@ class CardDefinitions {
       id: "sanji",
       originalTemplateId: "sanji",
       name: "Sanji",
-      imageUrl: "cards/one_piece/Sanji.jpg",
+      imageUrl: "cards/one_piece/sanji.jpg",
       maxHp: 95, attack: 26, defense: 9, speed: 17, type: CardType.FIRE,
       talent: Talent(
         name: TalentType.OFFENSIVE_STANCE.toString().split('.').last,
@@ -196,7 +196,7 @@ class CardDefinitions {
       id: "nico_robin",
       originalTemplateId: "nico_robin",
       name: "Nico Robin",
-      imageUrl: "cards/one_piece/Nico_Robin.jpg",
+      imageUrl: "cards/one_piece/nico_robin.jpg",
       maxHp: 90, attack: 20, defense: 10, speed: 14, type: CardType.DARK,
       talent: Talent(
         name: TalentType.REVERSION.toString().split('.').last,
@@ -211,7 +211,7 @@ class CardDefinitions {
       id: "boa_hancock",
       originalTemplateId: "boa_hancock",
       name: "Boa Hancock",
-      imageUrl: "cards/one_piece/Boa_Hancock.jpg",
+      imageUrl: "cards/one_piece/boa_hancock.jpg",
       maxHp: 100, attack: 26, defense: 11, speed: 16, type: CardType.LIGHT,
       talent: Talent(
         name: TalentType.PARALYSIS.toString().split('.').last,
@@ -227,7 +227,7 @@ class CardDefinitions {
       id: "robin_dick_grayson", // Example ID
       originalTemplateId: "robin_dick_grayson",
       name: "Robin (Dick Grayson)",
-      imageUrl: "cards/teen_titans/Robin.jpg", // Ensure you have this image path
+      imageUrl: "cards/teen_titans/robin.jpg", // Ensure you have this image path
       maxHp: 90, attack: 22, defense: 12, speed: 18, type: CardType.NEUTRAL,
       talent: Talent(
         name: TalentType.PRECISION.toString().split('.').last,
@@ -241,7 +241,7 @@ class CardDefinitions {
       id: "starfire_koriandr",
       originalTemplateId: "starfire_koriandr",
       name: "Starfire",
-      imageUrl: "cards/teen_titans/Starfire.jpg", // Ensure you have this image path
+      imageUrl: "cards/teen_titans/starfire.jpg", // Ensure you have this image path
       maxHp: 110, attack: 25, defense: 10, speed: 16, type: CardType.LIGHT, // Light or Fire could fit
       talent: Talent(
         name: TalentType.BLAZE.toString().split('.').last, // Or a new "Starbolt" talent
@@ -255,7 +255,7 @@ class CardDefinitions {
       id: "raven_rachel_roth",
       originalTemplateId: "raven_rachel_roth",
       name: "Raven",
-      imageUrl: "cards/teen_titans/Raven.jpg", // Ensure you have this image path
+      imageUrl: "cards/teen_titans/raven.jpg", // Ensure you have this image path
       maxHp: 85, attack: 18, defense: 15, speed: 12, type: CardType.DARK,
       talent: Talent(
         name: TalentType.REVERSION.toString().split('.').last, // Or a new "Soul Self" talent
@@ -269,7 +269,7 @@ class CardDefinitions {
       id: "beast_boy_garfield_logan",
       originalTemplateId: "beast_boy_garfield_logan",
       name: "Beast Boy",
-      imageUrl: "cards/teen_titans/BeastBoy.jpg", // Ensure you have this image path
+      imageUrl: "cards/teen_titans/beastboy.jpg", // Ensure you have this image path
       maxHp: 100, attack: 20, defense: 14, speed: 15, type: CardType.GRASS, // Grass for nature/animal forms
       talent: Talent(
         name: TalentType.TRANSFORMATION.toString().split('.').last, // Or a new "AnimalMimicry" talent
@@ -283,7 +283,7 @@ class CardDefinitions {
       id: "cyborg_victor_stone",
       originalTemplateId: "cyborg_victor_stone",
       name: "Cyborg",
-      imageUrl: "cards/teen_titans/Cyborg.jpg", // Ensure you have this image path
+      imageUrl: "cards/teen_titans/cyborg.jpg", // Ensure you have this image path
       maxHp: 120, attack: 24, defense: 18, speed: 10, type: CardType.NEUTRAL, // Neutral or Electric
       talent: Talent(
         name: TalentType.OVERLOAD.toString().split('.').last, // Or a new "SonicCannon" talent
@@ -298,7 +298,7 @@ class CardDefinitions {
       id: "deathstroke_slade_wilson",
       originalTemplateId: "deathstroke_slade_wilson",
       name: "Deathstroke (Slade)",
-      imageUrl: "cards/teen_titans/Deathstroke.jpg", // Ensure you have this image path
+      imageUrl: "cards/teen_titans/deathstroke.jpg", // Ensure you have this image path
       maxHp: 105, attack: 26, defense: 16, speed: 17, type: CardType.DARK, // Dark or Neutral
       talent: Talent(
         name: TalentType.EXECUTIONER.toString().split('.').last,
@@ -361,10 +361,10 @@ class CardDefinitions {
   // They could have unique talents or slightly boosted stats for their rarity.
   static final List<Card> eventCards = [
     Card(
-      id: "powerpuff_girls_butterbup",
-      originalTemplateId: "powerpuff_girls_butterbup", // Can be unique or based on an existing template
-      name: "ButterCup",
-      imageUrl: "cards/event_cards/powerpuff_girls/buttercup.jpg", // Placeholder - create this image
+      id: "powerpuff_girls_buttercup",
+      originalTemplateId: "powerpuff_girls_buttercup", // Can be unique or based on an existing template
+      name: "Buttercup", // Consistent casing
+      imageUrl: "assets/cards/event_cards/powerpuff_girls/buttercup.jpg",
       maxHp: 1500, attack: 180, defense: 120, speed: 90, type: CardType.GRASS, // Example Raid Boss Stats
       talent: Talent(
         name: "LIFE SAP", // Example new Talent
@@ -380,7 +380,7 @@ class CardDefinitions {
       id: "powerpuff_girls_blossom",
       originalTemplateId: "powerpuff_girls_blossom",
       name: "Blossom",
-      imageUrl: "cards/event_cards/powerpuff_girls/blossom.jpg", // Placeholder - create this image
+      imageUrl: "assets/cards/event_cards/powerpuff_girls/blossom.jpg",
       maxHp: 1800, attack: 150, defense: 150, speed: 80, type: CardType.FIRE, // Example Raid Boss Stats
       talent: Talent(
         name: "TRICK ROOM", // Example new Talent
@@ -395,7 +395,7 @@ class CardDefinitions {
       id: "powerpuff_girls_bubbles",
       originalTemplateId: "powerpuff_girls_bubbles",
       name: "Bubbles",
-      imageUrl: "cards/event_cards/powerpuff_girls/bubbles.jpg", // Placeholder
+      imageUrl: "assets/cards/event_cards/powerpuff_girls/bubbles.jpg",
       maxHp: 2000, attack: 200, defense: 100, speed: 110, type: CardType.WATER, // Example Raid Boss Stats
       talent: Talent(
        name: "TRICK ROOM", // Example new Talent
