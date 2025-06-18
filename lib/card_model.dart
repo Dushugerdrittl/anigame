@@ -433,6 +433,245 @@ class Card {
     return (currentLevel * 100) +
         50; // Example formula: 150 for L1->L2, 250 for L2->L3
   }
+
+  Card copyWith({
+    String? id,
+    String? originalTemplateId,
+    String? name,
+    String? imageUrl,
+    int? maxHp,
+    int? currentHp,
+    int? attack,
+    int? defense,
+    int? speed,
+    CardType? type,
+    Talent? talent,
+    bool clearTalent = false, // Special flag to nullify talent
+    CardRarity? rarity,
+    int? level,
+    int? evolutionLevel,
+    int? ascensionLevel,
+    int? xp,
+    int? currentMana,
+    int? maxMana,
+    bool? isYangBuffActive,
+    bool? isBloodSurgeAttackBuffActive,
+    double? manaRegenBonus,
+    double? currentHealingEffectivenessBonus,
+    double? currentLifestealBonus,
+    bool? isBloodSurgeLifestealActive,
+    bool? isDivineBlessingActive,
+    bool? isDominanceBuffActive,
+    bool? isExecutionerBuffActive,
+    bool? isProtectorDefBuffActive,
+    bool? hasProtectorActivatedThisBattle,
+    int? recoilSourceMaxHpForSelf,
+    bool? isTakingRecoilDamageFromOpponent,
+    int? recoilDamageSourceMaxHpFromOpponent,
+    bool? hasReversionActivatedThisBattle,
+    bool? isReversionAllyBuffActive,
+    bool? isTemporalRewindActive,
+    int? temporalRewindTurnsRemaining,
+    bool? isAmplifierBuffActive,
+    int? amplifierTurnsRemaining,
+    bool? isUnderdogBuffActive,
+    bool? isUnderBurnDebuff,
+    int? burnStacks,
+    int? burnCasterAttack,
+    int? burnDurationTurns,
+    double? burnDamagePerStackPercent,
+    double? burnHealingReductionPercent,
+    int? temporalRewindInitialHpAtBuff,
+    bool? isEnduranceBuffActive,
+    int? enduranceTurnsRemaining,
+    double? enduranceDamageReductionPercent,
+    double? currentEvasionChance,
+    int? evasionBuffTurnsRemaining,
+    int? evasionStacks,
+    bool? isFrozen,
+    int? frozenTurnsRemaining,
+    double? frozenSpeedReductionPercent,
+    bool? isOffensiveStanceActive,
+    int? offensiveStanceTurnsRemaining,
+    bool? isStunned,
+    bool? isPoisoned,
+    int? poisonTurnsRemaining,
+    int? poisonFlatDamage,
+    double? poisonPercentDamage,
+    int? poisonCasterAttack,
+    bool? isSilenced,
+    int? silenceTurnsRemaining,
+    bool? isPainForPowerBuffActive,
+    bool? isPrecisionBuffActive,
+    int? precisionTurnsRemaining,
+    double? precisionCritChanceBonus,
+    double? precisionCritDamageBonus,
+    bool? isRegenerationBuffActive,
+    int? regenerationTurnsRemaining,
+    int? regenerationHealPerTurn,
+    bool? isTimeBombActive,
+    int? timeBombTurnsRemaining,
+    int? timeBombDamage,
+    int? trickRoomEffectTurnsRemaining,
+    bool? isTrickRoomAtkActive,
+    int? trickRoomAtkBuffDebuffAmount,
+    bool? isTrickRoomDefActive,
+    int? trickRoomDefBuffDebuffAmount,
+    int? fightingCounter,
+    int? painForPowerTurnsRemaining,
+    bool? isUnderGrievousLimiterDebuff,
+    int? divineBlessingTurnsRemaining,
+    bool? isBerserkerBuffActive,
+    int? originalAttack,
+    int? originalDefense,
+    int? originalSpeed,
+    int? originalMaxHp,
+    int? diamondPrice,
+  }) {
+    return Card(
+      id: id ?? this.id,
+      originalTemplateId: originalTemplateId ?? this.originalTemplateId,
+      name: name ?? this.name,
+      imageUrl: imageUrl ?? this.imageUrl,
+      maxHp: maxHp ?? this.maxHp,
+      attack: attack ?? this.attack,
+      defense: defense ?? this.defense,
+      speed: speed ?? this.speed,
+      type: type ?? this.type,
+      talent: clearTalent ? null : (talent ?? this.talent),
+      rarity: rarity ?? this.rarity,
+      level: level ?? this.level,
+      evolutionLevel: evolutionLevel ?? this.evolutionLevel,
+      ascensionLevel: ascensionLevel ?? this.ascensionLevel,
+      xp: xp ?? this.xp,
+      currentMana: currentMana ?? this.currentMana,
+      maxMana: maxMana ?? this.maxMana,
+      isYangBuffActive: isYangBuffActive ?? this.isYangBuffActive,
+      isBloodSurgeAttackBuffActive:
+          isBloodSurgeAttackBuffActive ?? this.isBloodSurgeAttackBuffActive,
+      manaRegenBonus: manaRegenBonus ?? this.manaRegenBonus,
+      currentHealingEffectivenessBonus:
+          currentHealingEffectivenessBonus ??
+          this.currentHealingEffectivenessBonus,
+      currentLifestealBonus:
+          currentLifestealBonus ?? this.currentLifestealBonus,
+      isBloodSurgeLifestealActive:
+          isBloodSurgeLifestealActive ?? this.isBloodSurgeLifestealActive,
+      isDivineBlessingActive:
+          isDivineBlessingActive ?? this.isDivineBlessingActive,
+      isDominanceBuffActive:
+          isDominanceBuffActive ?? this.isDominanceBuffActive,
+      isExecutionerBuffActive:
+          isExecutionerBuffActive ?? this.isExecutionerBuffActive,
+      isProtectorDefBuffActive:
+          isProtectorDefBuffActive ?? this.isProtectorDefBuffActive,
+      hasProtectorActivatedThisBattle:
+          hasProtectorActivatedThisBattle ??
+          this.hasProtectorActivatedThisBattle,
+      recoilSourceMaxHpForSelf:
+          recoilSourceMaxHpForSelf ?? this.recoilSourceMaxHpForSelf,
+      isTakingRecoilDamageFromOpponent:
+          isTakingRecoilDamageFromOpponent ??
+          this.isTakingRecoilDamageFromOpponent,
+      recoilDamageSourceMaxHpFromOpponent:
+          recoilDamageSourceMaxHpFromOpponent ??
+          this.recoilDamageSourceMaxHpFromOpponent,
+      hasReversionActivatedThisBattle:
+          hasReversionActivatedThisBattle ??
+          this.hasReversionActivatedThisBattle,
+      isReversionAllyBuffActive:
+          isReversionAllyBuffActive ?? this.isReversionAllyBuffActive,
+      isTemporalRewindActive:
+          isTemporalRewindActive ?? this.isTemporalRewindActive,
+      temporalRewindTurnsRemaining:
+          temporalRewindTurnsRemaining ?? this.temporalRewindTurnsRemaining,
+      isAmplifierBuffActive:
+          isAmplifierBuffActive ?? this.isAmplifierBuffActive,
+      amplifierTurnsRemaining:
+          amplifierTurnsRemaining ?? this.amplifierTurnsRemaining,
+      isUnderdogBuffActive: isUnderdogBuffActive ?? this.isUnderdogBuffActive,
+      isUnderBurnDebuff: isUnderBurnDebuff ?? this.isUnderBurnDebuff,
+      burnStacks: burnStacks ?? this.burnStacks,
+      burnCasterAttack: burnCasterAttack ?? this.burnCasterAttack,
+      burnDurationTurns: burnDurationTurns ?? this.burnDurationTurns,
+      burnDamagePerStackPercent:
+          burnDamagePerStackPercent ?? this.burnDamagePerStackPercent,
+      burnHealingReductionPercent:
+          burnHealingReductionPercent ?? this.burnHealingReductionPercent,
+      temporalRewindInitialHpAtBuff:
+          temporalRewindInitialHpAtBuff ?? this.temporalRewindInitialHpAtBuff,
+      isEnduranceBuffActive:
+          isEnduranceBuffActive ?? this.isEnduranceBuffActive,
+      enduranceTurnsRemaining:
+          enduranceTurnsRemaining ?? this.enduranceTurnsRemaining,
+      enduranceDamageReductionPercent:
+          enduranceDamageReductionPercent ??
+          this.enduranceDamageReductionPercent,
+      currentEvasionChance: currentEvasionChance ?? this.currentEvasionChance,
+      evasionBuffTurnsRemaining:
+          evasionBuffTurnsRemaining ?? this.evasionBuffTurnsRemaining,
+      evasionStacks: evasionStacks ?? this.evasionStacks,
+      isFrozen: isFrozen ?? this.isFrozen,
+      frozenTurnsRemaining: frozenTurnsRemaining ?? this.frozenTurnsRemaining,
+      frozenSpeedReductionPercent:
+          frozenSpeedReductionPercent ?? this.frozenSpeedReductionPercent,
+      isOffensiveStanceActive:
+          isOffensiveStanceActive ?? this.isOffensiveStanceActive,
+      offensiveStanceTurnsRemaining:
+          offensiveStanceTurnsRemaining ?? this.offensiveStanceTurnsRemaining,
+      isStunned: isStunned ?? this.isStunned,
+      isPoisoned: isPoisoned ?? this.isPoisoned,
+      poisonTurnsRemaining: poisonTurnsRemaining ?? this.poisonTurnsRemaining,
+      poisonFlatDamage: poisonFlatDamage ?? this.poisonFlatDamage,
+      poisonPercentDamage: poisonPercentDamage ?? this.poisonPercentDamage,
+      poisonCasterAttack: poisonCasterAttack ?? this.poisonCasterAttack,
+      isSilenced: isSilenced ?? this.isSilenced,
+      silenceTurnsRemaining:
+          silenceTurnsRemaining ?? this.silenceTurnsRemaining,
+      isPainForPowerBuffActive:
+          isPainForPowerBuffActive ?? this.isPainForPowerBuffActive,
+      isPrecisionBuffActive:
+          isPrecisionBuffActive ?? this.isPrecisionBuffActive,
+      precisionTurnsRemaining:
+          precisionTurnsRemaining ?? this.precisionTurnsRemaining,
+      precisionCritChanceBonus:
+          precisionCritChanceBonus ?? this.precisionCritChanceBonus,
+      precisionCritDamageBonus:
+          precisionCritDamageBonus ?? this.precisionCritDamageBonus,
+      isRegenerationBuffActive:
+          isRegenerationBuffActive ?? this.isRegenerationBuffActive,
+      regenerationTurnsRemaining:
+          regenerationTurnsRemaining ?? this.regenerationTurnsRemaining,
+      regenerationHealPerTurn:
+          regenerationHealPerTurn ?? this.regenerationHealPerTurn,
+      isTimeBombActive: isTimeBombActive ?? this.isTimeBombActive,
+      timeBombTurnsRemaining:
+          timeBombTurnsRemaining ?? this.timeBombTurnsRemaining,
+      timeBombDamage: timeBombDamage ?? this.timeBombDamage,
+      trickRoomEffectTurnsRemaining:
+          trickRoomEffectTurnsRemaining ?? this.trickRoomEffectTurnsRemaining,
+      isTrickRoomAtkActive: isTrickRoomAtkActive ?? this.isTrickRoomAtkActive,
+      trickRoomAtkBuffDebuffAmount:
+          trickRoomAtkBuffDebuffAmount ?? this.trickRoomAtkBuffDebuffAmount,
+      isTrickRoomDefActive: isTrickRoomDefActive ?? this.isTrickRoomDefActive,
+      trickRoomDefBuffDebuffAmount:
+          trickRoomDefBuffDebuffAmount ?? this.trickRoomDefBuffDebuffAmount,
+      fightingCounter: fightingCounter ?? this.fightingCounter,
+      painForPowerTurnsRemaining:
+          painForPowerTurnsRemaining ?? this.painForPowerTurnsRemaining,
+      isUnderGrievousLimiterDebuff:
+          isUnderGrievousLimiterDebuff ?? this.isUnderGrievousLimiterDebuff,
+      divineBlessingTurnsRemaining:
+          divineBlessingTurnsRemaining ?? this.divineBlessingTurnsRemaining,
+      isBerserkerBuffActive:
+          isBerserkerBuffActive ?? this.isBerserkerBuffActive,
+      originalAttack: originalAttack ?? this.originalAttack,
+      originalDefense: originalDefense ?? this.originalDefense,
+      originalSpeed: originalSpeed ?? this.originalSpeed,
+      originalMaxHp: originalMaxHp ?? this.originalMaxHp,
+      diamondPrice: diamondPrice ?? this.diamondPrice,
+    );
+  }
 }
 
 // --- Serialization/Deserialization ---

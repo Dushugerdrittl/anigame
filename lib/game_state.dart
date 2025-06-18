@@ -116,6 +116,12 @@ class GameState extends ChangeNotifier {
 
   // --- Gold Shop Card Getters ---
   List<Card> _getShopCardsByRarity(CardRarity rarity) {
+    const List<String> diamondShopExclusivePlayerTemplates = [
+      "buttercup_player",
+      "blossom_player",
+      "bubbles_player",
+    ];
+
     return CardDefinitions.availableCards
         .where((card) {
           // Use definitions from CardDefinitions
@@ -127,6 +133,10 @@ class GameState extends ChangeNotifier {
           return raritySupplies?.containsKey(rarity) ?? false;
         })
         .expand((cardTemplate) {
+          // Exclude diamond shop exclusive player templates from gold shop
+          if (diamondShopExclusivePlayerTemplates.contains(cardTemplate.id)) {
+            return <Card>[]; // Explicitly return an empty list of Cards
+          } // Ensure this returns a List<Card>
           // Create a display card for this specific rarity
           return [_copyCard(cardTemplate, rarity, 1)]; // Show as Lvl 1 in shop
         })
@@ -158,12 +168,55 @@ class GameState extends ChangeNotifier {
 
   // --- Diamond Shop Placeholders (Data needs to be defined) ---
   List<Card> get diamondShopEventCards {
-    // TODO: Define data source for event cards
-    // For now, let's assume event cards are displayed at their defined rarity and level 1
-    // The _copyCard method will handle rarity stat scaling if their defined rarity is not COMMON
-    return CardDefinitions.eventCards
-        .map((template) => _copyCard(template, template.rarity, 1))
-        .toList();
+    List<Card> shopCards = [];
+
+    // 1. Add existing event cards (typically single rarity, specific price)
+    shopCards.addAll(
+      CardDefinitions.eventCards
+          .map((template) => _copyCard(template, template.rarity, 1))
+          .toList(),
+    );
+
+    // 2. Add new playable Powerpuff Girls cards across all rarities
+    final List<String> multiRarityTemplateIds = [
+      "buttercup_player",
+      "blossom_player",
+      "bubbles_player",
+    ];
+
+    for (String templateId in multiRarityTemplateIds) {
+      final Card? baseTemplate = CardDefinitions.availableCards
+          .firstWhereOrNull((c) => c.id == templateId);
+      if (baseTemplate != null) {
+        if (baseTemplate.diamondPrice != null) {
+          for (CardRarity rarity in CardRarity.values) {
+            Card shopInstance = _copyCard(baseTemplate, rarity, 1);
+            // Scale diamond price based on rarity
+            // Example scaling: Common (base), Uncommon (x2), Rare (x4), SR (x8), UR (x16)
+            int priceMultiplier = 1;
+            if (rarity == CardRarity.UNCOMMON) {
+              priceMultiplier = 2;
+            } else if (rarity == CardRarity.RARE) {
+              priceMultiplier = 4;
+            } else if (rarity == CardRarity.SUPER_RARE) {
+              priceMultiplier = 8;
+            } else if (rarity == CardRarity.ULTRA_RARE) {
+              priceMultiplier = 16;
+            }
+
+            shopInstance = shopInstance.copyWith(
+              diamondPrice: (baseTemplate.diamondPrice! * priceMultiplier),
+            ); // Safe now due to outer check
+            shopCards.add(shopInstance);
+          }
+        } else {
+          _logMessage(
+            "Warning: Diamond price not set for base template ${baseTemplate.id} (multi-rarity shop). Skipping.",
+          );
+        }
+      }
+    }
+    return shopCards;
   }
 
   List<String> get diamondShopCardSkins {
@@ -2166,12 +2219,17 @@ class GameState extends ChangeNotifier {
       return;
     }
 
-    _logMessage("Loading game state for user: $_currentPlayerId");
+    _logMessage(
+      "GameState: ENTERING loadGameState for user: $_currentPlayerId. Current local currency before load: $_playerCurrency",
+    );
     try {
       DocumentSnapshot userDoc = await FirebaseFirestore.instance
           .collection('users')
           .doc(_currentPlayerId)
           .get();
+      _logMessage(
+        "GameState: Fetched Firestore document for $_currentPlayerId. Exists: ${userDoc.exists}",
+      );
 
       if (userDoc.exists) {
         Map<String, dynamic> data = userDoc.data() as Map<String, dynamic>;
@@ -2180,6 +2238,9 @@ class GameState extends ChangeNotifier {
         _playerCurrency = data['playerCurrency'] ?? 500;
         _playerDiamonds = data['playerDiamonds'] ?? 10;
         _playerSouls = data['playerSouls'] ?? 1000;
+        _logMessage(
+          "GameState: Loaded currency from Firestore. New local currency: $_playerCurrency",
+        );
         _currentAuthUsername = data['username'] ?? "";
 
         List<dynamic>? ownedCardsJson =
@@ -2764,35 +2825,50 @@ class GameState extends ChangeNotifier {
     }
 
     Card? rewardCard;
-    String bossTemplateId = raid.bossCard.originalTemplateId;
+    String raidBossOriginalTemplateId = raid.bossCard.originalTemplateId;
+    String rewardCardTemplateId;
+
+    // Map raid boss ID to its corresponding playable card ID
+    switch (raidBossOriginalTemplateId) {
+      case "buttercup_raid_boss":
+        rewardCardTemplateId = "buttercup_player";
+        break;
+      case "blossom_raid_boss":
+        rewardCardTemplateId = "blossom_player";
+        break;
+      case "bubbles_raid_boss":
+        rewardCardTemplateId = "bubbles_player";
+        break;
+      // Add other mappings here if you have more specific raid boss -> playable card rewards
+      default:
+        // Fallback: if no specific mapping, try to use the boss's original template ID.
+        // This might be okay if some bosses are directly collectible or have a generic playable form.
+        rewardCardTemplateId = raidBossOriginalTemplateId;
+        _logMessage(
+          "Warning: No specific playable reward mapping for raid boss $raidBossOriginalTemplateId. Attempting to reward with template ID: $rewardCardTemplateId.",
+        );
+    }
 
     if (_random.nextDouble() < urChance) {
       rewardCard = _mintCardInstanceByTemplateId(
-        bossTemplateId,
+        rewardCardTemplateId, // Use the mapped playable card ID
         CardRarity.ULTRA_RARE,
         initialLevel: 1,
       );
-      if (rewardCard != null) {
-        _logMessage(
-          "$winnerPlayerId received UR ${rewardCard.name} from defeating ${raid.rarity.name} raid!",
-        );
-      }
     } else if (_random.nextDouble() < srChance) {
       rewardCard = _mintCardInstanceByTemplateId(
-        bossTemplateId,
+        rewardCardTemplateId, // Use the mapped playable card ID
         CardRarity.SUPER_RARE,
         initialLevel: 1,
       );
-      if (rewardCard != null) {
-        _logMessage(
-          "$winnerPlayerId received SR ${rewardCard.name} from defeating ${raid.rarity.name} raid!",
-        );
-      }
     }
 
     if (rewardCard != null) {
       if (_currentPlayerId == winnerPlayerId) {
         _userOwnedCards.add(rewardCard);
+        _logMessage(
+          "$winnerPlayerId received ${rewardCard.rarity.name} ${rewardCard.name} from defeating ${raid.rarity.name} raid!",
+        );
       } else {
         _logMessage(
           "Reward card ${rewardCard.name} minted for $winnerPlayerId (not current GameState user).",

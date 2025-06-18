@@ -17,6 +17,29 @@ class DevAdminTools {
     print("DEV_ADMIN_TOOL: $message");
   }
 
+  /// Helper function to find a user's Firestore document ID by their username.
+  static Future<String?> _findUserDocId(String username) async {
+    try {
+      QuerySnapshot userQuery = await FirebaseFirestore.instance
+          .collection('users')
+          .where('username', isEqualTo: username)
+          .limit(1)
+          .get();
+
+      if (userQuery.docs.isNotEmpty) {
+        return userQuery.docs.first.id;
+      } else {
+        _logDevMessage(
+          "Firestore: User '$username' not found by username query.",
+        );
+        return null;
+      }
+    } catch (e) {
+      _logDevMessage("Firestore: Error looking up user '$username': $e");
+      return null;
+    }
+  }
+
   /// Adds currency to a specified user. For developer use.
   static Future<void> addCurrencyToUser(
     GameState gameState,
@@ -28,39 +51,15 @@ class DevAdminTools {
   }) async {
     _logDevMessage("Attempting to add currency/shards to user '$username'.");
 
-    // --- Firestore Update ---
-    FirebaseFirestore firestore = FirebaseFirestore.instance;
-    String? userDocId;
-    Map<String, dynamic> firestoreUpdates =
-        {}; // Collect all Firestore updates here
+    String? userDocId = await _findUserDocId(username);
 
-    // --- User Lookup (common for all updates) ---
-    try {
-      QuerySnapshot userQuery = await firestore
-          .collection('users')
-          .where(
-            'username',
-            isEqualTo: username,
-          ) // Assumes 'username' field stores display names
-          .limit(1)
-          .get();
-
-      if (userQuery.docs.isNotEmpty) {
-        _logDevMessage("Firestore: User document found for '$username'.");
-        userDocId = userQuery.docs.first.id;
-      } else {
-        _logDevMessage(
-          "Firestore: User '$username' not found by username query. Firestore updates will be skipped.",
-        );
-      }
-    } catch (e) {
-      _logDevMessage(
-        "Firestore: Error looking up user '$username': $e. Firestore updates will be skipped.",
-      );
-    }
-
-    // --- Currency Firestore Updates ---
     if (userDocId != null) {
+      FirebaseFirestore firestore = FirebaseFirestore.instance;
+      DocumentReference userDocRef = firestore
+          .collection('users')
+          .doc(userDocId);
+      Map<String, dynamic> firestoreUpdates = {};
+
       if (gold != null) {
         firestoreUpdates['playerCurrency'] = FieldValue.increment(gold);
       }
@@ -70,71 +69,59 @@ class DevAdminTools {
       if (souls != null) {
         firestoreUpdates['playerSouls'] = FieldValue.increment(souls);
       }
-    }
 
-    // --- Shard Firestore Updates ---
-    if (userDocId != null && allShardsAmount != null) {
-      _logDevMessage(
-        "Preparing to add $allShardsAmount to each elemental shard for user '$username' in Firestore.",
-      );
-      for (ShardType type in ShardType.values) {
-        // Path for map field update: playerShards.INDEX
-        // This assumes ShardType enum is available and its index corresponds to keys in Firestore.
-        firestoreUpdates['playerShards.${type.index.toString()}'] =
-            FieldValue.increment(allShardsAmount);
-      }
-    }
-
-    // --- Execute Firestore Updates ---
-    if (userDocId != null && firestoreUpdates.isNotEmpty) {
-      try {
-        DocumentReference userDocRef = firestore
-            .collection('users')
-            .doc(userDocId);
-        await userDocRef.update(firestoreUpdates);
+      if (allShardsAmount != null) {
         _logDevMessage(
-          "Firestore: Successfully applied updates for user '$username' (Doc ID: $userDocId).",
+          "Preparing to add $allShardsAmount to each elemental shard for user '$username' in Firestore.",
         );
-        if (gold != null) {
-          _logDevMessage("Firestore: Incremented gold by $gold.");
+        for (ShardType type in ShardType.values) {
+          firestoreUpdates['playerShards.${type.index.toString()}'] =
+              FieldValue.increment(allShardsAmount);
         }
-        if (diamonds != null) {
-          _logDevMessage("Firestore: Incremented diamonds by $diamonds.");
-        }
-        if (souls != null) {
-          _logDevMessage("Firestore: Incremented souls by $souls.");
-        }
-        if (allShardsAmount != null) {
+      }
+
+      if (firestoreUpdates.isNotEmpty) {
+        try {
+          await userDocRef.update(firestoreUpdates);
           _logDevMessage(
-            "Firestore: Incremented all elemental shards by $allShardsAmount.",
+            "Firestore: Successfully applied updates for user '$username' (Doc ID: $userDocId). Gold: +$gold, Diamonds: +$diamonds, Souls: +$souls, AllShards: +$allShardsAmount",
+          );
+        } catch (e) {
+          _logDevMessage(
+            "Firestore: Error applying updates for user '$username': $e",
           );
         }
-      } catch (e) {
+      } else {
         _logDevMessage(
-          "Firestore: Error applying updates for user '$username': $e",
+          "Firestore: No currency/shard updates requested for user '$username'.",
         );
       }
-    } else if (userDocId != null && firestoreUpdates.isEmpty) {
+    } else {
       _logDevMessage(
-        "Firestore: No currency/shard updates requested for user '$username'.",
+        "Skipping Firestore updates as user '$username' was not found.",
       );
     }
 
-    // --- SharedPreferences Update (can remain as a local/secondary effect) ---
+    // --- SharedPreferences Update (primarily for local testing or non-current users) ---
     final prefs = await SharedPreferences.getInstance();
     if (gold != null) {
       int currentGold =
-          prefs.getInt('${username}_playerCurrency') ??
+          prefs.getInt('${username}_playerCurrency') ?? // Corrected key format
           0; // This key uses the passed 'username'
-      await prefs.setInt('${username}_playerCurrency', currentGold + gold);
+      await prefs.setInt(
+        '${username}_playerCurrency',
+        currentGold + gold,
+      ); // Corrected key format
       _logDevMessage(
         "SharedPreferences: Added $gold gold to $username. New local total: ${currentGold + gold}",
       );
     }
     if (diamonds != null) {
-      int currentDiamonds = prefs.getInt('${username}_playerDiamonds') ?? 0;
+      int currentDiamonds =
+          prefs.getInt('${username}_playerDiamonds') ??
+          0; // Corrected key format
       await prefs.setInt(
-        '${username}_playerDiamonds',
+        '${username}_playerDiamonds', // Corrected key format
         currentDiamonds + diamonds,
       );
       _logDevMessage(
@@ -142,36 +129,36 @@ class DevAdminTools {
       );
     }
     if (souls != null) {
-      int currentSouls = prefs.getInt('${username}_playerSouls') ?? 0;
-      await prefs.setInt('${username}_playerSouls', currentSouls + souls);
+      int currentSouls =
+          prefs.getInt('${username}_playerSouls') ?? 0; // Corrected key format
+      await prefs.setInt(
+        '${username}_playerSouls',
+        currentSouls + souls,
+      ); // Corrected key format
       _logDevMessage(
         "SharedPreferences: Added $souls souls to $username. New local total: ${currentSouls + souls}",
       );
     }
 
     if (allShardsAmount != null) {
-      // SharedPreferences update for shards is complex due to map storage in GameState.
-      // GameState.loadGameState() will overwrite SharedPreferences with Firestore data for the current user.
-      // So, for simplicity, we'll just log the intent for SharedPreferences for shards.
       _logDevMessage(
-        "SharedPreferences: Intent to add $allShardsAmount to each elemental shard for $username. Actual update relies on Firestore and GameState.loadGameState().",
+        "SharedPreferences: Intent to add $allShardsAmount to each elemental shard for $username. Note: Firestore is the primary source of truth for shards; local SharedPreferences for shards are complex and typically overwritten on game load for the current user.",
       );
-      // To properly update SharedPreferences to match GameState's shard map structure:
-      // 1. Define a key like '${username}_playerShardsMap'.
-      // 2. Load the existing JSON string for this key.
-      // 3. Decode to Map<String, dynamic>.
-      // 4. Increment values for each ShardType.index.toString().
-      // 5. Encode back to JSON and save.
     }
 
     // --- Reload GameState if current user ---
     if (userDocId != null &&
         userDocId == gameState.currentPlayerId &&
         gameState.isUserLoggedIn) {
+      // Enhanced logging for the reload condition
       _logDevMessage(
-        "Current user '$username' modified. Reloading their game state from Firestore.",
+        "Reload Condition Met for '$username': \n  Firestore Doc ID for '$username': $userDocId \n  GameState.currentPlayerId: ${gameState.currentPlayerId} \n  Reloading game state...",
       );
       await gameState.loadGameState();
+    } else if (userDocId != null) {
+      _logDevMessage(
+        "Reload Condition NOT Met for '$username': \n  Firestore Doc ID for '$username': $userDocId \n  GameState.currentPlayerId: ${gameState.currentPlayerId} \n  GameState.isUserLoggedIn: ${gameState.isUserLoggedIn}",
+      );
     }
   }
 
@@ -183,7 +170,6 @@ class DevAdminTools {
     CardRarity rarity,
     int level,
   ) async {
-    // final prefs = await SharedPreferences.getInstance(); // SharedPreferences update is secondary to Firestore
     final template = CardDefinitions.availableCards.firstWhereOrNull(
       (c) => c.id == cardTemplateId,
     );
@@ -193,12 +179,6 @@ class DevAdminTools {
       );
       return;
     }
-
-    // We need a way to create a card instance. GameState has _copyCard.
-    // Replicating a simplified _copyCard logic here for clarity and to set level correctly.
-    // Ideally, GameState._copyCard or a utility would be used.
-    // This simplified version focuses on getting a card with correct rarity and base stats for level 1.
-    // Then we'll "level it up" to the target level.
 
     final baseStats = RarityStatsUtil.calculateStatsForRarity(
       baseHp: template.maxHp,
@@ -222,7 +202,6 @@ class DevAdminTools {
       rarity: rarity,
       level: 1, // Start at level 1
       xp: 0,
-      xpToNextLevel: Card.calculateXpToNextLevel(1),
       // ... other fields initialized as in GameState._copyCard
       originalAttack: baseStats['attack']!,
       originalDefense: baseStats['defense']!,
@@ -246,43 +225,45 @@ class DevAdminTools {
     newCard.currentHp = newCard.maxHp; // Ensure HP is full
 
     // --- Firestore Update ---
-    FirebaseFirestore firestore = FirebaseFirestore.instance;
-    try {
-      QuerySnapshot userQuery = await firestore
+    String? userDocId = await _findUserDocId(username);
+
+    if (userDocId != null) {
+      FirebaseFirestore firestore = FirebaseFirestore.instance;
+      DocumentReference userDocRef = firestore
           .collection('users')
-          .where('username', isEqualTo: username)
-          .limit(1)
-          .get();
-      if (userQuery.docs.isNotEmpty) {
-        String userDocId = userQuery.docs.first.id;
-        DocumentReference userDocRef = firestore
-            .collection('users')
-            .doc(userDocId);
-        String newCardJson = cardToJson(
-          newCard,
-        ); // Assumes cardToJson exists and returns String
+          .doc(userDocId);
+      String newCardJson = cardToJson(newCard);
+      try {
         await userDocRef.update({
           'userOwnedCards': FieldValue.arrayUnion([newCardJson]),
         });
         _logDevMessage(
           "Firestore: Added ${newCard.name} (Lvl ${newCard.level}, ${rarity.name}) to $username's inventory (Doc ID: $userDocId).",
         );
-      } else {
+      } catch (e) {
+        // Added catch block to log specific Firestore error
         _logDevMessage(
-          "Firestore: User '$username' not found. Card not added to Firestore.",
+          "Firestore: Error adding card to user '$username' (Doc ID: $userDocId): $e",
         );
       }
-    } catch (e) {
-      _logDevMessage("Firestore: Error adding card to user '$username': $e");
+    } else {
+      _logDevMessage(
+        "Skipping Firestore card addition as user '$username' was not found.",
+      );
     }
 
     // --- Reload GameState if current user ---
-    if (username == gameState.currentAuthUsername && gameState.isUserLoggedIn) {
-      // Compare with GameState's auth username
+    if (userDocId != null &&
+        userDocId == gameState.currentPlayerId &&
+        gameState.isUserLoggedIn) {
       _logDevMessage(
-        "Current user '$username' inventory modified. Reloading their game state from Firestore.",
+        "Reload Condition Met for '$username' (Card Add): \n  Firestore Doc ID for '$username': $userDocId \n  GameState.currentPlayerId: ${gameState.currentPlayerId} \n  Reloading game state...",
       );
       await gameState.loadGameState();
+    } else if (userDocId != null) {
+      _logDevMessage(
+        "Reload Condition NOT Met for '$username' (Card Add): \n  Firestore Doc ID for '$username': $userDocId \n  GameState.currentPlayerId: ${gameState.currentPlayerId} \n  GameState.isUserLoggedIn: ${gameState.isUserLoggedIn}",
+      );
     }
   }
 }

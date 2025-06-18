@@ -8,6 +8,18 @@ import '../widgets/star_display_widget.dart';
 import '../widgets/framed_card_image_widget.dart'; // Import the new widget
 import '../widgets/status_icons_widget.dart'; // For status effect icons
 
+// Define some common spacing and icon size constants for battle screen
+const double kBattleSmallSpacing = 2.0;
+const double kBattleMediumSpacing = 4.0;
+const double kBattleLargeSpacing = 8.0;
+
+const double kCardTitleFontSize = 13.0; // Adjusted for titleMedium equivalent
+const double kCardLevelEvoFontSize = 8.0;
+const double kCardTypeTalentFontSize = 9.0;
+const double kCardStatIconSize = 14.0;
+const double kCardStatBarIconSize = 16.0;
+const double kCardStatBarFontSize = 10.0;
+
 class BattleScreen extends StatelessWidget {
   const BattleScreen({super.key});
 
@@ -41,12 +53,15 @@ class BattleScreen extends StatelessWidget {
 
     // Fallback to enemy type if no specific floor background matches
     if (gameState.enemyCard != null) {
-      if (gameState.enemyCard!.type == CardType.FIRE)
+      if (gameState.enemyCard!.type == CardType.FIRE) {
         return "assets/Themes/battle_background_fire.jpg";
-      if (gameState.enemyCard!.type == CardType.GRASS)
+      }
+      if (gameState.enemyCard!.type == CardType.GRASS) {
         return "assets/Themes/battle_background_grass.jpg";
-      if (gameState.enemyCard!.type == CardType.WATER)
+      }
+      if (gameState.enemyCard!.type == CardType.WATER) {
         return "assets/Themes/battle_background_water.jpg";
+      }
     }
     // Add more type-specific conditions here
     return defaultBg;
@@ -141,7 +156,12 @@ class BattleScreen extends StatelessWidget {
         Expanded(
           flex: 4, // Adjusted flex for better balance
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(8.0, 8.0, 8.0, 4.0),
+            padding: const EdgeInsets.fromLTRB(
+              kBattleLargeSpacing,
+              kBattleLargeSpacing,
+              kBattleLargeSpacing,
+              kBattleMediumSpacing,
+            ),
             child: _buildCardDisplay(
               context,
               gameState.enemyCard!,
@@ -152,9 +172,11 @@ class BattleScreen extends StatelessWidget {
         ),
         // Battle Log (Middle) - Smaller, more refined
         Container(
-          height:
-              MediaQuery.of(context).size.height * 0.15, // 15% of screen height
-          margin: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+          height: MediaQuery.of(context).size.height * 0.15,
+          margin: const EdgeInsets.symmetric(
+            horizontal: 12.0,
+            vertical: kBattleLargeSpacing,
+          ),
           padding: const EdgeInsets.all(8.0),
           decoration: BoxDecoration(
             color: Colors.black.withOpacity(0.7),
@@ -190,7 +212,12 @@ class BattleScreen extends StatelessWidget {
         Expanded(
           flex: 4, // Adjusted flex
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(8.0, 4.0, 8.0, 8.0),
+            padding: const EdgeInsets.fromLTRB(
+              kBattleLargeSpacing,
+              kBattleMediumSpacing,
+              kBattleLargeSpacing,
+              kBattleLargeSpacing,
+            ),
             child: _buildCardDisplay(
               context,
               gameState.playerCard!,
@@ -238,7 +265,9 @@ class BattleScreen extends StatelessWidget {
                   ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(
+                  height: kBattleLargeSpacing * 3,
+                ), // Larger spacing
                 // --- Post-battle navigation options ---
                 if (gameState.currentBattlingFloorId != null &&
                     gameState.currentBattlingLevelNumber != null) ...[
@@ -248,10 +277,20 @@ class BattleScreen extends StatelessWidget {
                     // Player won a floor battle
                     Builder(
                       builder: (context) {
-                        final currentFloor = gameState.gameFloors.firstWhere(
-                          (f) => f.id == gameState.currentBattlingFloorId,
-                        );
-                        final currentLevelNumber =
+                        final currentFloor = gameState.gameFloors
+                            .firstWhereOrNull(
+                              (f) => f.id == gameState.currentBattlingFloorId,
+                            );
+                        if (currentFloor == null) {
+                          // This case should ideally not happen if currentBattlingFloorId is valid
+                          print(
+                            "Error: Current battling floor with ID '${gameState.currentBattlingFloorId}' not found in gameFloors list.",
+                          );
+                          return const Text(
+                            "Error: Floor data missing. Cannot proceed.",
+                          );
+                        }
+                        final int currentLevelNumber =
                             gameState.currentBattlingLevelNumber!;
                         final bool isLastLevelOfFloor =
                             currentLevelNumber >= currentFloor.numberOfLevels;
@@ -307,7 +346,7 @@ class BattleScreen extends StatelessWidget {
                         return const SizedBox.shrink();
                       },
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: kBattleLargeSpacing * 1.5),
                   ] else ...[
                     // Player lost a floor battle
                     ElevatedButton(
@@ -325,7 +364,7 @@ class BattleScreen extends StatelessWidget {
                       },
                       child: const Text('Retry Level'),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: kBattleLargeSpacing * 1.5),
                     Padding(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 16.0,
@@ -360,7 +399,7 @@ class BattleScreen extends StatelessWidget {
                       },
                       child: const Text('Open Guide'),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: kBattleLargeSpacing * 1.5),
                   ],
                 ],
                 ElevatedButton(
@@ -392,7 +431,7 @@ class BattleScreen extends StatelessWidget {
                   style: Theme.of(context).textTheme.titleMedium,
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: kBattleLargeSpacing * 2.5),
                 ElevatedButton(
                   onPressed: () {
                     Navigator.popUntil(
@@ -404,7 +443,7 @@ class BattleScreen extends StatelessWidget {
                 ),
               ] else ...[
                 const CircularProgressIndicator(),
-                const SizedBox(height: 16),
+                const SizedBox(height: kBattleLargeSpacing * 2),
                 const Text("Loading battle..."),
               ],
             ],
@@ -454,8 +493,8 @@ class BattleScreen extends StatelessWidget {
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(
-          horizontal: 8.0,
-          vertical: 6.0,
+          horizontal: kBattleLargeSpacing,
+          vertical: kBattleMediumSpacing + kBattleSmallSpacing,
         ), // Reduced padding
         child: Column(
           // Removed SingleChildScrollView
@@ -463,41 +502,14 @@ class BattleScreen extends StatelessWidget {
               .spaceEvenly, // Distribute space, can help with overflow
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Text(
-              "${isPlayer ? 'Player' : 'Enemy'}: ${card.name}",
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: isPlayer
-                    ? Theme.of(context).colorScheme.onPrimaryContainer
-                    : Theme.of(context).colorScheme.onErrorContainer,
-                shadows: [
-                  Shadow(blurRadius: 1, color: Colors.black.withOpacity(0.3)),
-                ],
-              ),
-              textAlign: TextAlign.center,
-              overflow: TextOverflow.ellipsis,
-            ),
-            StarDisplayWidget(
-              ascensionLevel: card.ascensionLevel,
-              rarity: card.rarity,
-              starSize: 10, // Slightly smaller stars
-            ),
-            Text(
-              "Lvl ${card.level} Evo ${card.evolutionLevel}",
-              style: TextStyle(
-                fontSize: 8,
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurfaceVariant.withOpacity(0.8),
-              ),
-            ), // Even smaller font
+            _CardHeaderWidget(card: card, isPlayer: isPlayer),
             FramedCardImageWidget(
               // Use the new widget here
               card: card,
-              width: 65, // Slightly smaller image
-              height: 85, // Slightly smaller image
+              width: 65,
+              height: 85,
             ),
-            const SizedBox(height: 2), // Further reduced spacing
+            const SizedBox(height: kBattleSmallSpacing),
             // HP Bar
             _buildStatBar(
               context,
@@ -509,7 +521,7 @@ class BattleScreen extends StatelessWidget {
             ),
             // Mana Bar (if applicable)
             if (card.maxMana > 0) ...[
-              const SizedBox(height: 2), // Reduced spacing
+              const SizedBox(height: kBattleSmallSpacing),
               _buildStatBar(
                 context,
                 icon: Icons.flash_on,
@@ -519,69 +531,17 @@ class BattleScreen extends StatelessWidget {
                 barColor: manaColor,
               ),
             ],
-            // const SizedBox(height: 2), // Removed to save space
-            // ATK, DEF, SPD Display
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.flash_on,
-                  color: Colors.orange.shade700,
-                  size: 14,
-                ), // Smaller icon
-                const SizedBox(width: 3),
-                Text(
-                  "ATK: ${card.attack}",
-                  style: TextStyle(
-                    color: Colors.orange.shade700,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 9,
-                  ),
-                ), // Smaller font
-                const SizedBox(width: 5), // Spacer
-                Icon(
-                  Icons.shield,
-                  color: Colors.brown.shade700,
-                  size: 14,
-                ), // Smaller icon
-                const SizedBox(width: 3),
-                Text(
-                  "DEF: ${card.defense}",
-                  style: TextStyle(
-                    color: Colors.brown.shade700,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 9,
-                  ),
-                ), // Smaller font
-                const SizedBox(width: 5), // Spacer
-                Icon(
-                  Icons.speed,
-                  color: Colors.green.shade600,
-                  size: 14,
-                ), // Smaller icon
-                const SizedBox(width: 3),
-                Text(
-                  "SPD: ${card.speed}",
-                  style: TextStyle(
-                    color: Colors.green.shade600,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 9,
-                  ),
-                ), // Smaller font
-              ],
-            ),
-            // const SizedBox.shrink(), // Removed
+            _CardStatsRowWidget(card: card),
             Text(
               "Type: ${card.type.toString().split('.').last}",
               style: TextStyle(
-                fontSize: 8,
+                fontSize: kCardLevelEvoFontSize,
                 fontStyle: FontStyle.italic,
                 color: Theme.of(
                   context,
                 ).colorScheme.onSurfaceVariant.withOpacity(0.8),
               ),
             ), // Smaller font
-            // const SizedBox.shrink(), // Removed
             if (card.talent != null)
               Tooltip(
                 message: card.talent!.description,
@@ -589,7 +549,7 @@ class BattleScreen extends StatelessWidget {
                 child: Text(
                   "Talent: ${card.talent!.name}",
                   style: TextStyle(
-                    fontSize: 9,
+                    fontSize: kCardTypeTalentFontSize,
                     color: Theme.of(context).colorScheme.tertiary,
                     fontWeight: FontWeight.w600,
                   ),
@@ -597,7 +557,6 @@ class BattleScreen extends StatelessWidget {
                   overflow: TextOverflow.ellipsis, // Handle long talent names
                 ),
               ),
-            // const SizedBox(height: 4), // Removed to save space
             StatusIconsWidget(
               card: card,
               iconSize: 12, // This call is now valid
@@ -610,8 +569,8 @@ class BattleScreen extends StatelessWidget {
     return Card(
       elevation: isTurn ? 10.0 : 6.0, // Keep turn-based elevation
       margin: const EdgeInsets.symmetric(
-        vertical: 6.0,
-        horizontal: 4.0,
+        vertical: kBattleMediumSpacing + kBattleSmallSpacing,
+        horizontal: kBattleMediumSpacing,
       ), // Apply margin here
       clipBehavior: Clip.antiAlias, // Important for rounded corners and border
       shape: RoundedRectangleBorder(
@@ -646,20 +605,19 @@ class BattleScreen extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: iconColor, size: 16), // Smaller icon
-            const SizedBox(width: 4),
+            Icon(icon, color: iconColor, size: kCardStatBarIconSize),
+            const SizedBox(width: kBattleMediumSpacing),
             Text(
               "$currentValue/$maxValue",
               style: TextStyle(
                 color: iconColor,
                 fontWeight: FontWeight.bold,
-                fontSize: 10,
+                fontSize: kCardStatBarFontSize,
                 letterSpacing: 0.5,
               ),
-            ), // Smaller font, slight letter spacing
+            ),
           ],
         ),
-        // const SizedBox(height: 3), // Removed to save space
         Container(
           height: 9, // Slightly thicker for better visual
           margin: const EdgeInsets.symmetric(
@@ -678,6 +636,117 @@ class BattleScreen extends StatelessWidget {
               valueColor: AlwaysStoppedAnimation<Color>(barColor),
               minHeight: 9,
             ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _CardHeaderWidget extends StatelessWidget {
+  final app_card.Card card;
+  final bool isPlayer;
+
+  const _CardHeaderWidget({required this.card, required this.isPlayer});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Text(
+          "${isPlayer ? 'Player' : 'Enemy'}: ${card.name}",
+          style: TextStyle(
+            fontSize: kCardTitleFontSize,
+            fontWeight: FontWeight.bold,
+            color: isPlayer
+                ? Theme.of(context).colorScheme.onPrimaryContainer
+                : Theme.of(context).colorScheme.onErrorContainer,
+            shadows: [
+              Shadow(blurRadius: 1, color: Colors.black.withOpacity(0.3)),
+            ],
+          ),
+          textAlign: TextAlign.center,
+          overflow: TextOverflow.ellipsis,
+        ),
+        StarDisplayWidget(
+          ascensionLevel: card.ascensionLevel,
+          rarity: card.rarity,
+          starSize: 10,
+        ),
+        Text(
+          "Lvl ${card.level} Evo ${card.evolutionLevel}",
+          style: TextStyle(
+            fontSize: kCardLevelEvoFontSize,
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurfaceVariant.withOpacity(0.8),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _CardStatsRowWidget extends StatelessWidget {
+  final app_card.Card card;
+
+  const _CardStatsRowWidget({required this.card});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(
+          Icons.flash_on, // Standard icon for Attack
+          color: Colors
+              .orange
+              .shade700, // Consider Theme.of(context).colorScheme.secondary or similar
+          size: kCardStatIconSize,
+        ),
+        const SizedBox(
+          width: kBattleSmallSpacing + 1,
+        ), // Adjusted for visual balance
+        Text(
+          "ATK: ${card.attack}",
+          style: TextStyle(
+            color: Colors
+                .orange
+                .shade700, // Consider Theme.of(context).colorScheme.secondary
+            fontWeight: FontWeight.bold,
+            fontSize:
+                kCardTypeTalentFontSize, // Consistent with talent/type font size
+          ),
+        ),
+        const SizedBox(width: kBattleMediumSpacing + 1), // Spacer
+        Icon(
+          Icons.shield, // Standard icon for Defense
+          color: Colors.brown.shade700, // Consider a theme color
+          size: kCardStatIconSize,
+        ),
+        const SizedBox(width: kBattleSmallSpacing + 1),
+        Text(
+          "DEF: ${card.defense}",
+          style: TextStyle(
+            color: Colors.brown.shade700, // Consider a theme color
+            fontWeight: FontWeight.bold,
+            fontSize: kCardTypeTalentFontSize,
+          ),
+        ),
+        const SizedBox(width: kBattleMediumSpacing + 1), // Spacer
+        Icon(
+          Icons.speed, // Standard icon for Speed
+          color: Colors.green.shade600, // Consider a theme color
+          size: kCardStatIconSize,
+        ),
+        const SizedBox(width: kBattleSmallSpacing + 1),
+        Text(
+          "SPD: ${card.speed}",
+          style: TextStyle(
+            color: Colors.green.shade600, // Consider a theme color
+            fontWeight: FontWeight.bold,
+            fontSize: kCardTypeTalentFontSize,
           ),
         ),
       ],

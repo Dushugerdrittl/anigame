@@ -22,6 +22,7 @@ import 'screens/login_screen.dart'; // Import LoginScreen
 import 'screens/register_screen.dart'; // Import RegisterScreen
 import 'widgets/themed_scaffold.dart'; // Import ThemedScaffold
 import 'screens/raid_guide_screen.dart'; // Import RaidGuideScreen
+import 'utils/admin_actions.dart'; // Import your AdminActions
 
 void main() async {
   // Make main async
@@ -30,17 +31,37 @@ void main() async {
     // Initialize Firebase
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  // Create GameState instance
+  final gameState = GameState();
+
+  // !!! --- TEMPORARY ADMIN ACTION CALL --- !!!
+  // This will run every time the app starts.
+  // REMEMBER TO REMOVE OR COMMENT THIS OUT AFTER TESTING.
+  // Ensure the user "astolf" is logged in for UI to update,
+  // or check Firestore directly for other users.
+  //AdminActions admin = AdminActions(gameState);
+  // Example: Give gold to Astolf every time the app starts (for testing)
+  //await admin.giveGoldToAstolf();
+  // print("MAIN.DART: Attempted to run admin.giveGoldToAstolf()");
+
   runApp(
     // Your existing runApp call
     ChangeNotifierProvider(
-      create: (context) => GameState(),
-      child: const MyApp(),
+      create: (context) => gameState, // Use the instance we created
+      child: MyApp(
+        gameState: gameState,
+      ), // Pass gameState if needed by MyApp directly
     ),
   );
 }
 
 class MyApp extends StatefulWidget {
-  const MyApp({super.key});
+  // const MyApp({super.key}); // Old constructor
+
+  // If MyApp needs gameState directly, you can pass it like this:
+  final GameState gameState;
+  const MyApp({super.key, required this.gameState});
 
   @override
   State<MyApp> createState() => _MyAppState();
@@ -128,10 +149,11 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         '/raid_lobby': (context) {
           // Route for RaidLobbyScreen
           final raidId = ModalRoute.of(context)!.settings.arguments as String?;
-          if (raidId == null)
+          if (raidId == null) {
             return const PlaceholderScreen(
               title: "Error: Raid ID missing",
             ); // Or handle error differently
+          }
           return RaidLobbyScreen(raidId: raidId);
         },
         '/raid_battle': (context) {

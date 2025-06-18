@@ -2,6 +2,13 @@ import 'package:flutter/material.dart';
 import '../widgets/themed_scaffold.dart';
 import '../elemental_system.dart'; // Import your elemental system
 
+// Define some common spacing and icon size constants
+const double kSmallSpacing = 3.0;
+const double kMediumSpacing = 6.0;
+const double kLargeSpacing = 10.0;
+const double kChipIconSize = 14.0;
+const double kSectionIconSize = 18.0;
+
 class ElementsGuideScreen extends StatelessWidget {
   const ElementsGuideScreen({super.key});
 
@@ -21,7 +28,7 @@ class ElementsGuideScreen extends StatelessWidget {
         title: const Text('Elements Guide'),
         toolbarHeight: 30,
         backgroundColor: Colors.transparent, // Make AppBar transparent
-        elevation: 0, // Remove shadow
+        elevation: 0,
       ),
       body: ListView(
         padding: const EdgeInsets.all(16.0),
@@ -38,8 +45,9 @@ class ElementsGuideScreen extends StatelessWidget {
     List<Widget> neutral = [];
 
     for (var defenderType in CardType.values) {
-      if (attackerType == defenderType)
+      if (attackerType == defenderType) {
         continue; // Skip self-comparison for this display
+      }
 
       double multiplier = ElementalSystem.getTypeEffectivenessMultiplier(
         attackerType,
@@ -49,8 +57,11 @@ class ElementsGuideScreen extends StatelessWidget {
         strengths.add(
           Chip(
             label: Text(
-              defenderType.toString().split('.').last,
-              style: const TextStyle(fontSize: 10),
+              defenderType.toString().split('.').last, // Keep enum name
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: Colors.green.shade800,
+                fontWeight: FontWeight.bold,
+              ),
             ), // Smaller text
             backgroundColor: Colors.green.withOpacity(0.2),
             labelStyle: TextStyle(
@@ -60,7 +71,7 @@ class ElementsGuideScreen extends StatelessWidget {
             avatar: Icon(
               Icons.arrow_upward,
               color: Colors.green.shade700,
-              size: 14, // Smaller icon
+              size: kChipIconSize,
             ),
             padding: const EdgeInsets.symmetric(
               horizontal: 4,
@@ -73,8 +84,11 @@ class ElementsGuideScreen extends StatelessWidget {
         weaknesses.add(
           Chip(
             label: Text(
-              defenderType.toString().split('.').last,
-              style: const TextStyle(fontSize: 10),
+              defenderType.toString().split('.').last, // Keep enum name
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: Colors.red.shade800,
+                fontWeight: FontWeight.bold,
+              ),
             ), // Smaller text
             backgroundColor: Colors.red.withOpacity(0.2),
             labelStyle: TextStyle(
@@ -84,7 +98,7 @@ class ElementsGuideScreen extends StatelessWidget {
             avatar: Icon(
               Icons.arrow_downward,
               color: Colors.red.shade700,
-              size: 14, // Smaller icon
+              size: kChipIconSize,
             ),
             padding: const EdgeInsets.symmetric(
               horizontal: 4,
@@ -99,10 +113,10 @@ class ElementsGuideScreen extends StatelessWidget {
     }
 
     return Card(
-      margin: const EdgeInsets.symmetric(vertical: 6.0), // Reduced margin
+      margin: const EdgeInsets.symmetric(vertical: kMediumSpacing),
       elevation: 2, // Slightly reduced elevation
       child: Padding(
-        padding: const EdgeInsets.all(10.0), // Reduced padding
+        padding: const EdgeInsets.all(kLargeSpacing),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -114,16 +128,16 @@ class ElementsGuideScreen extends StatelessWidget {
                 color: _getElementColor(attackerType),
               ),
             ),
-            const SizedBox(height: 6), // Reduced spacing
+            const SizedBox(height: kMediumSpacing),
             if (strengths.isNotEmpty) ...[
               Row(
                 children: [
                   Icon(
                     Icons.check_circle_outline,
                     color: Colors.green.shade700,
-                    size: 18, // Smaller icon
+                    size: kSectionIconSize,
                   ),
-                  const SizedBox(width: 6), // Reduced spacing
+                  const SizedBox(width: kMediumSpacing),
                   Text(
                     "Strong Against (x1.5):",
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
@@ -133,13 +147,13 @@ class ElementsGuideScreen extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 3), // Reduced spacing
+              const SizedBox(height: kSmallSpacing),
               Wrap(
-                spacing: 6.0,
-                runSpacing: 3.0,
+                spacing: kMediumSpacing,
+                runSpacing: kSmallSpacing,
                 children: strengths,
-              ), // Reduced spacing
-              const SizedBox(height: 6), // Reduced spacing
+              ),
+              const SizedBox(height: kMediumSpacing),
             ],
             if (weaknesses.isNotEmpty) ...[
               Row(
@@ -147,9 +161,9 @@ class ElementsGuideScreen extends StatelessWidget {
                   Icon(
                     Icons.cancel_outlined,
                     color: Colors.red.shade700,
-                    size: 18, // Smaller icon
+                    size: kSectionIconSize,
                   ),
-                  const SizedBox(width: 6), // Reduced spacing
+                  const SizedBox(width: kMediumSpacing),
                   Text(
                     "Weak Against (x0.75):",
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
@@ -159,13 +173,13 @@ class ElementsGuideScreen extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 3), // Reduced spacing
+              const SizedBox(height: kSmallSpacing),
               Wrap(
-                spacing: 6.0,
-                runSpacing: 3.0,
+                spacing: kMediumSpacing,
+                runSpacing: kSmallSpacing,
                 children: weaknesses,
-              ), // Reduced spacing
-              const SizedBox(height: 6), // Reduced spacing
+              ),
+              const SizedBox(height: kMediumSpacing),
             ],
             if (strengths.isEmpty &&
                 weaknesses.isEmpty &&

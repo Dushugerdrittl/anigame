@@ -1,3 +1,4 @@
+// card_supply_data.dart
 import '../card_model.dart'; // Import CardRarity
 
 // Defines the total number of copies available for each card template ID in the entire game,
@@ -43,10 +44,7 @@ class CardSupplyData {
       CardRarity.SUPER_RARE: 1300,
       CardRarity.ULTRA_RARE: 300,
     },
-    "madara_uchiha": {
-      CardRarity.SUPER_RARE: 800,
-      CardRarity.ULTRA_RARE: 200,
-    },
+    "madara_uchiha": {CardRarity.SUPER_RARE: 800, CardRarity.ULTRA_RARE: 200},
     "obito_uchiha": {
       CardRarity.RARE: 1500,
       CardRarity.SUPER_RARE: 900,
@@ -125,10 +123,32 @@ class CardSupplyData {
       CardRarity.SUPER_RARE: 80,
       CardRarity.ULTRA_RARE: 35,
     },
-    // IMPORTANT: Ensure every card ID from CardDefinitions.availableCards
-    // has a corresponding entry here with all its intended rarity supplies defined.
-    // If a card template should not have a certain rarity, simply omit that rarity
-    // from its inner map. For example, if "kakashi_hatake" should not have a COMMON
-    // or UNCOMMON version, those entries are not included in its map.
+    // Supply for Event Powerpuff Girls (Raid Bosses / Event Shop specific)
+    "powerpuff_girls_buttercup_playable": {CardRarity.SUPER_RARE: 100},
+    "powerpuff_girls_blossom_playable": {CardRarity.SUPER_RARE: 100},
+    "powerpuff_girls_bubbles_playable": {CardRarity.SUPER_RARE: 100},
+    // Supply for new playable Powerpuff Girls
+    "buttercup_player": {
+      CardRarity.COMMON: 10000, // High supply for common
+      CardRarity.UNCOMMON: 5000,
+      CardRarity.RARE: 2500,
+      CardRarity.SUPER_RARE: 1000,
+      CardRarity.ULTRA_RARE: 500,
+    },
+    "blossom_player": {
+      CardRarity.COMMON: 10000,
+      CardRarity.UNCOMMON: 5000,
+      CardRarity.RARE: 2500,
+      CardRarity.SUPER_RARE: 1000,
+      CardRarity.ULTRA_RARE: 500,
+    },
+    "bubbles_player": {
+      CardRarity.COMMON: 10000,
+      CardRarity.UNCOMMON: 5000,
+      CardRarity.RARE: 2500,
+      CardRarity.SUPER_RARE: 1000,
+      CardRarity.ULTRA_RARE: 500,
+    },
+    // Add more card templates and their supply limits here
   };
 }

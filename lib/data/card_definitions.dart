@@ -424,6 +424,73 @@ class CardDefinitions {
         manaCost: 0,
       ),
     ),
+    // --- Playable Powerpuff Girls (Player Acquirable) ---
+    Card(
+      id: "buttercup_player", // New unique ID for playable version
+      originalTemplateId: "buttercup_player",
+      name: "Buttercup (Playable)",
+      imageUrl:
+          "cards/event_cards/powerpuff_girls/buttercup.jpg", // Can reuse image
+      maxHp: 95, // Normal playable stats
+      attack: 24,
+      defense: 11,
+      speed: 15,
+      type: CardType.GRASS,
+      rarity: CardRarity.COMMON, // Base rarity for template
+      talent: Talent(
+        // Same talent as event version, or a different one if desired
+        name: "LIFE SAP",
+        description:
+            "Saps life from enemies, healing self for a percentage of damage dealt.",
+        type: TalentType.LIFE_SAP,
+        value: 0.25,
+        manaCost: 0,
+      ),
+      diamondPrice: 50, // Base price for Common version
+    ),
+    Card(
+      id: "blossom_player", // New unique ID
+      originalTemplateId: "blossom_player",
+      name: "Blossom (Playable)",
+      imageUrl: "cards/event_cards/powerpuff_girls/blossom.jpg",
+      maxHp: 90,
+      attack: 22,
+      defense: 13,
+      speed: 14,
+      type: CardType.FIRE,
+      rarity: CardRarity.COMMON,
+      talent: Talent(
+        name: "TRICK ROOM",
+        description:
+            "If the enemy familiars' ATK is higher than yours, your allies gain ATK equal to 108% of the difference between the two ATK's, and simultaneously reduce their ATK by the same amount.",
+        type: TalentType.TRICK_ROOM_ATK,
+        value: 0.10,
+        manaCost: 0,
+      ),
+      diamondPrice: 50,
+    ),
+    Card(
+      id: "bubbles_player", // New unique ID
+      originalTemplateId: "bubbles_player",
+      name: "Bubbles (Playable)",
+      imageUrl: "cards/event_cards/powerpuff_girls/bubbles.jpg",
+      maxHp: 88,
+      attack: 20,
+      defense: 12,
+      speed: 16,
+      type: CardType.WATER,
+      rarity: CardRarity.COMMON,
+      talent: Talent(
+        name:
+            "TRICK ROOM", // Assuming same talent for consistency, can be changed
+        description:
+            "If the enemy familiars' ATK is higher than yours, your allies gain ATK equal to 108% of the difference between the two ATK's, and simultaneously reduce their ATK by the same amount.",
+        type: TalentType.TRICK_ROOM_ATK,
+        value: 0.15,
+        manaCost: 0,
+      ),
+      diamondPrice: 50,
+    ),
     // Add Event Card templates here as well if they are used as base templates
     // for raid bosses or other dynamic instances.
   ];
@@ -496,6 +563,69 @@ class CardDefinitions {
         manaCost: 0,
       ),
       diamondPrice: 250,
+    ),
+    // --- POWERPUFF GIRLS RAID BOSSES ---
+    // These are much stronger versions for raid events.
+    Card(
+      id: "buttercup_raid_boss", // Unique ID for the raid boss
+      originalTemplateId: "buttercup_raid_boss", // Self-referential
+      name: "Buttercup (Raid Boss)",
+      imageUrl:
+          "cards/event_cards/powerpuff_girls/buttercup.jpg", // Can reuse image
+      maxHp: 15000, // Significantly higher stats for a raid boss
+      attack: 750,
+      defense: 500,
+      speed: 200,
+      type: CardType.GRASS,
+      rarity: CardRarity.ULTRA_RARE, // Raid bosses are typically high rarity
+      talent: Talent(
+        // Can have the same or a more powerful talent
+        name: "Raging Fury", // Example: Enhanced talent
+        description:
+            "Unleashes devastating attacks when enraged. Massively increased ATK at low HP.",
+        type: TalentType.BERSERKER, // Example
+        value: 0.75, // Higher value for boss
+        manaCost: 0,
+      ),
+    ),
+    Card(
+      id: "blossom_raid_boss",
+      originalTemplateId: "blossom_raid_boss",
+      name: "Blossom (Raid Boss)",
+      imageUrl: "cards/event_cards/powerpuff_girls/blossom.jpg",
+      maxHp: 14000,
+      attack: 700,
+      defense: 550,
+      speed: 190,
+      type: CardType.FIRE,
+      rarity: CardRarity.ULTRA_RARE,
+      talent: Talent(
+        name: "Strategic Command",
+        description:
+            "Boosts all allies' stats and periodically debuffs enemies.",
+        type: TalentType.DOMINANCE,
+        value: 0.3,
+        manaCost: 0,
+      ),
+    ),
+    Card(
+      id: "bubbles_raid_boss",
+      originalTemplateId: "bubbles_raid_boss",
+      name: "Bubbles (Raid Boss)",
+      imageUrl: "cards/event_cards/powerpuff_girls/bubbles.jpg",
+      maxHp: 13000,
+      attack: 650,
+      defense: 450,
+      speed: 220,
+      type: CardType.WATER,
+      rarity: CardRarity.ULTRA_RARE,
+      talent: Talent(
+        name: "Sonic Scream",
+        description: "High chance to stun all enemies and deal area damage.",
+        type: TalentType.PARALYSIS,
+        value: 0.5,
+        manaCost: 50,
+      ),
     ),
   ];
 
