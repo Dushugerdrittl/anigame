@@ -3,8 +3,13 @@ import '../card_model.dart' as app_card;
 
 class StatusIconsWidget extends StatelessWidget {
   final app_card.Card card;
+  final double iconSize;
 
-  const StatusIconsWidget({super.key, required this.card});
+  const StatusIconsWidget({
+    super.key,
+    required this.card,
+    this.iconSize = 16.0, // Default icon size, can be overridden
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -12,43 +17,115 @@ class StatusIconsWidget extends StatelessWidget {
 
     // Positive Buffs
     if (card.isPrecisionBuffActive) {
-      statusWidgets.add(_buildStatusIcon(Icons.center_focus_strong, Colors.cyan, "Precision: ${card.precisionTurnsRemaining}t"));
+      statusWidgets.add(
+        _buildStatusIcon(
+          Icons.center_focus_strong,
+          Colors.cyan,
+          "Precision: CRIT +${(card.precisionCritChanceBonus * 100).toStringAsFixed(0)}%, CRIT DMG +${(card.precisionCritDamageBonus * 100).toStringAsFixed(0)}% (${card.precisionTurnsRemaining}t)",
+        ),
+      );
     }
     if (card.isRegenerationBuffActive) {
-      statusWidgets.add(_buildStatusIcon(Icons.healing, Colors.lightGreen, "Regen: ${card.regenerationTurnsRemaining}t"));
+      statusWidgets.add(
+        _buildStatusIcon(
+          Icons.healing,
+          Colors.lightGreen,
+          "Regen: ${card.regenerationHealPerTurn} HP/turn (${card.regenerationTurnsRemaining}t)",
+        ),
+      );
     }
     if (card.isAmplifierBuffActive) {
-      statusWidgets.add(_buildStatusIcon(Icons.trending_up, Colors.orange, "Amplify: ${card.amplifierTurnsRemaining}t"));
+      statusWidgets.add(
+        _buildStatusIcon(
+          Icons.trending_up,
+          Colors.orange,
+          "Amplify: ATK/DEF Up (${card.amplifierTurnsRemaining}t)",
+        ),
+      );
     }
     if (card.isEnduranceBuffActive) {
-      statusWidgets.add(_buildStatusIcon(Icons.shield, Colors.brown, "Endure: ${card.enduranceTurnsRemaining}t"));
+      statusWidgets.add(
+        _buildStatusIcon(
+          Icons.shield,
+          Colors.brown,
+          "Endure: DMG Reduction (${card.enduranceTurnsRemaining}t)",
+        ),
+      );
     }
-     if (card.isOffensiveStanceActive) {
-      statusWidgets.add(_buildStatusIcon(Icons.gpp_good, Colors.red.shade300, "Offense: ${card.offensiveStanceTurnsRemaining}t"));
+    if (card.isOffensiveStanceActive) {
+      statusWidgets.add(
+        _buildStatusIcon(
+          Icons.gpp_good,
+          Colors.red.shade300,
+          "Off. Stance: ATK Up, DEF Down (${card.offensiveStanceTurnsRemaining}t)",
+        ),
+      );
     }
     if (card.isPainForPowerBuffActive) {
-      statusWidgets.add(_buildStatusIcon(Icons.whatshot_outlined, Colors.deepOrange, "P4P: ${card.painForPowerTurnsRemaining}t"));
+      statusWidgets.add(
+        _buildStatusIcon(
+          Icons.whatshot_outlined,
+          Colors.deepOrange,
+          "P4P: ATK/SPD Up (${card.painForPowerTurnsRemaining}t)",
+        ),
+      );
     }
     // Add more positive buffs here...
 
     // Negative Debuffs
     if (card.isPoisoned) {
-      statusWidgets.add(_buildStatusIcon(Icons.coronavirus, Colors.purple, "Poison: ${card.poisonTurnsRemaining}t"));
+      statusWidgets.add(
+        _buildStatusIcon(
+          Icons.coronavirus,
+          Colors.purple,
+          "Poison: DMG/turn (${card.poisonTurnsRemaining}t)",
+        ),
+      );
     }
     if (card.isUnderBurnDebuff) {
-      statusWidgets.add(_buildStatusIcon(Icons.local_fire_department, Colors.red, "Burn: ${card.burnDurationTurns}t (${card.burnStacks}s)"));
+      statusWidgets.add(
+        _buildStatusIcon(
+          Icons.local_fire_department,
+          Colors.red,
+          "Burn: DMG/turn, Heal Reduced (${card.burnDurationTurns}t, ${card.burnStacks}s)",
+        ),
+      );
     }
     if (card.isStunned) {
-      statusWidgets.add(_buildStatusIcon(Icons.star, Colors.yellow.shade700, "Stunned"));
+      statusWidgets.add(
+        _buildStatusIcon(
+          Icons.star,
+          Colors.yellow.shade700,
+          "Stunned: Misses next turn",
+        ),
+      );
     }
     if (card.isSilenced) {
-      statusWidgets.add(_buildStatusIcon(Icons.mic_off, Colors.grey, "Silence: ${card.silenceTurnsRemaining}t"));
+      statusWidgets.add(
+        _buildStatusIcon(
+          Icons.mic_off,
+          Colors.grey,
+          "Silence: ${card.silenceTurnsRemaining}t",
+        ),
+      );
     }
     if (card.isFrozen) {
-      statusWidgets.add(_buildStatusIcon(Icons.ac_unit, Colors.lightBlue, "Frozen: ${card.frozenTurnsRemaining}t"));
+      statusWidgets.add(
+        _buildStatusIcon(
+          Icons.ac_unit,
+          Colors.lightBlue,
+          "Frozen: ${card.frozenTurnsRemaining}t",
+        ),
+      );
     }
     if (card.isTimeBombActive) {
-      statusWidgets.add(_buildStatusIcon(Icons.timer, Colors.orange.shade800, "Bomb: ${card.timeBombTurnsRemaining}t"));
+      statusWidgets.add(
+        _buildStatusIcon(
+          Icons.timer,
+          Colors.orange.shade800,
+          "Bomb: Explodes in ${card.timeBombTurnsRemaining}t for ${card.timeBombDamage} DMG",
+        ),
+      );
     }
     // Add more negative debuffs here...
 
@@ -67,7 +144,11 @@ class StatusIconsWidget extends StatelessWidget {
   Widget _buildStatusIcon(IconData icon, Color color, String tooltip) {
     return Tooltip(
       message: tooltip,
-      child: Icon(icon, color: color, size: 16), // Smaller icons
+      child: Icon(
+        icon,
+        color: color,
+        size: iconSize,
+      ), // Use the iconSize parameter
     );
   }
 }

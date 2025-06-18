@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../card_model.dart' as app_card; // Assuming CardRarity and Card are here
+import '../card_model.dart'
+    as app_card; // Assuming CardRarity and Card are here
 
 class FramedCardImageWidget extends StatelessWidget {
   final app_card.Card card; // Pass the whole card or just necessary fields
@@ -45,28 +46,47 @@ class FramedCardImageWidget extends StatelessWidget {
       }
     }
 
+    // Add this print statement for debugging
+    print(
+      "FramedCardImageWidget: Displaying card '${card.name}', imageUrl: '${card.imageUrl}'",
+    );
+
     return Container(
       width: width,
       height: height,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(10.0), // Outer radius for the frame
         border: imageFrameWidth > 0
-            ? Border.all(
-                color: imageFrameColor,
-                width: imageFrameWidth,
-              )
-            : Border.all(color: Colors.transparent, width: 0), // Ensure a border object exists for consistent layout if no specific frame
+            ? Border.all(color: imageFrameColor, width: imageFrameWidth)
+            : Border.all(
+                color: Colors.transparent,
+                width: 0,
+              ), // Ensure a border object exists for consistent layout if no specific frame
         // boxShadow can be kept if you like the depth, or removed for a flatter look
       ),
       child: ClipRRect(
         // Inner ClipRRect to ensure image respects the frame's rounded corners
         // Adjust radius if frame is very thick to prevent image corners peeking
-        borderRadius: BorderRadius.circular(10.0 - imageFrameWidth > 0 ? 10.0 - imageFrameWidth : 0),
+        borderRadius: BorderRadius.circular(
+          10.0 - imageFrameWidth > 0 ? 10.0 - imageFrameWidth : 0,
+        ),
         child: Image.asset(
-      card.imageUrl.isNotEmpty ? card.imageUrl : 'assets/Themes/default_card_image.jpg', // Use your default JPG
+          // Always prepend "assets/" to the stored imageUrl
+          card.imageUrl.isNotEmpty
+              ? "assets/${card.imageUrl}"
+              : "assets/Themes/default_card_image.jpg",
           fit: fit,
-          errorBuilder: (context, error, stackTrace) =>
-          Image.asset('assets/Themes/default_card_image.jpg', fit: fit), // Fallback to your default JPG
+          errorBuilder: (context, error, stackTrace) {
+            // Add this print to see the specific error for the image asset
+            print(
+              // Log the path that was attempted
+              "FramedCardImageWidget: Image.asset FAILED for 'assets/${card.imageUrl}'. Error: $error",
+            );
+            return Image.asset(
+              "assets/Themes/default_card_image.jpg", // Ensure fallback also has "assets/"
+              fit: fit,
+            ); // Fallback to your default JPG
+          },
         ),
       ),
     );

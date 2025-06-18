@@ -85,4 +85,5 @@ class DefaultFirebaseOptions {
     storageBucket: 'anigame-a8b61.firebasestorage.app',
     measurementId: 'G-DKG5FK7CDB',
   );
+
 }

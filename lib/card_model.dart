@@ -1,20 +1,22 @@
 import 'elemental_system.dart'; // For CardType
-import 'talent_system.dart';   // For Talent
+import 'talent_system.dart'; // For Talent
 import 'dart:convert'; // For jsonEncode and jsonDecode
 import 'data/card_definitions.dart'; // To look up templates during deserialization
 import 'package:flutter/material.dart'; // For Color
+import 'package:collection/collection.dart'; // Import for firstWhereOrNull
 
-enum CardRarity {
-  COMMON,
-  UNCOMMON,
-  RARE,
-  SUPER_RARE,
-  ULTRA_RARE,
-}
+enum CardRarity { COMMON, UNCOMMON, RARE, SUPER_RARE, ULTRA_RARE }
 
 enum ShardType {
   // Elemental Shards (can map from CardType)
-  GRASS_SHARD, FIRE_SHARD, WATER_SHARD, GROUND_SHARD, ELECTRIC_SHARD, NEUTRAL_SHARD, LIGHT_SHARD, DARK_SHARD,
+  GRASS_SHARD,
+  FIRE_SHARD,
+  WATER_SHARD,
+  GROUND_SHARD,
+  ELECTRIC_SHARD,
+  NEUTRAL_SHARD,
+  LIGHT_SHARD,
+  DARK_SHARD,
   // Progression Shards - These have been removed as per request
   // RARE_SHARD, EPIC_SHARD, LEGENDARY_SHARD, SOUL_SHARD
 }
@@ -25,9 +27,29 @@ const Color kSuperRareColor = Colors.amber; // Or Colors.amber.shade700
 const Color kUltraRareColor = Colors.red; // Or Colors.red.shade700
 const Color kCommonColor = Colors.grey;
 const Color kUncommonColor = Colors.green;
+
+// Helper function to get rarity color
+Color getRarityColor(CardRarity rarity) {
+  switch (rarity) {
+    case CardRarity.COMMON:
+      return kCommonColor;
+    case CardRarity.UNCOMMON:
+      return kUncommonColor;
+    case CardRarity.RARE:
+      return kRareColor;
+    case CardRarity.SUPER_RARE:
+      return kSuperRareColor;
+    case CardRarity.ULTRA_RARE:
+      return kUltraRareColor;
+    default:
+      return Colors.grey;
+  }
+}
+
 class Card {
   final String id; // Unique identifier
-  final String originalTemplateId; // The ID of the base card template from CardDefinitions
+  final String
+  originalTemplateId; // The ID of the base card template from CardDefinitions
   final String name;
   final String imageUrl; // For display (we'll use placeholders for now)
   int maxHp;
@@ -42,29 +64,39 @@ class Card {
   int evolutionLevel; // 0, 1, 2, 3
   int ascensionLevel; // 0 to 25
   int currentMana;
-  int xp; // Current experience points
+  int xp;
   int xpToNextLevel; // XP needed for the next level
   int maxMana;
   // Fields for stateful talents
   bool isYangBuffActive; // For YinYang talent
   bool isBloodSurgeAttackBuffActive; // For Blood Surge talent
   double currentLifestealBonus; // For Blood Surge lifesteal effect
-  double manaRegenBonus; // Percentage bonus to mana regeneration (e.g., 0.45 for +45%)
-  double currentHealingEffectivenessBonus; // Cumulative bonus to healing received (e.g., 0.15 for +15%)
+  double
+  manaRegenBonus; // Percentage bonus to mana regeneration (e.g., 0.45 for +45%)
+  double
+  currentHealingEffectivenessBonus; // Cumulative bonus to healing received (e.g., 0.15 for +15%)
   bool isBloodSurgeLifestealActive; // Tracks if Blood Surge lifesteal is active
   bool isDivineBlessingActive; // Tracks if Divine Blessing buff is active
   bool isDominanceBuffActive; // Tracks if Dominance ATK buff is active
   bool isExecutionerBuffActive; // Tracks if Executioner ATK buff is active
-  bool isUnderGrievousLimiterDebuff; // True if this card is debuffed by an enemy's Grievous Limiter
+  bool
+  isUnderGrievousLimiterDebuff; // True if this card is debuffed by an enemy's Grievous Limiter
   bool isProtectorDefBuffActive; // True if Protector's DEF buff is active
-  bool hasProtectorActivatedThisBattle; // True if Protector has triggered this battle
-  int recoilSourceMaxHpForSelf; // If this card has Recoil, stores its MaxHP for self-damage calc. 0 if no Recoil.
-  bool isTakingRecoilDamageFromOpponent; // True if opponent has Recoil affecting this card.
-  int recoilDamageSourceMaxHpFromOpponent; // MaxHP of the opponent who applied Recoil. 0 if not affected.
-  bool hasReversionActivatedThisBattle; // True if Reversion talent has triggered this battle
-  bool isReversionAllyBuffActive; // True if this card received the DEF/SPD buff from an ally's Reversion
+  bool
+  hasProtectorActivatedThisBattle; // True if Protector has triggered this battle
+  int
+  recoilSourceMaxHpForSelf; // If this card has Recoil, stores its MaxHP for self-damage calc. 0 if no Recoil.
+  bool
+  isTakingRecoilDamageFromOpponent; // True if opponent has Recoil affecting this card.
+  int
+  recoilDamageSourceMaxHpFromOpponent; // MaxHP of the opponent who applied Recoil. 0 if not affected.
+  bool
+  hasReversionActivatedThisBattle; // True if Reversion talent has triggered this battle
+  bool
+  isReversionAllyBuffActive; // True if this card received the DEF/SPD buff from an ally's Reversion
   bool isTemporalRewindActive; // True if Temporal Rewind buff is active
-  int temporalRewindTurnsRemaining; // Turns remaining for Temporal Rewind effect
+  int
+  temporalRewindTurnsRemaining; // Turns remaining for Temporal Rewind effect
   bool isAmplifierBuffActive; // True if Amplifier ATK/DEF buff is active
   int amplifierTurnsRemaining; // Turns remaining for Amplifier buff
   bool isUnderdogBuffActive; // Tracks if Underdog ATK/DEF buff is active
@@ -91,7 +123,8 @@ class Card {
   bool isPoisoned; // True if the card is poisoned
   int poisonTurnsRemaining; // Turns remaining for poison
   int poisonFlatDamage; // Flat damage component of poison
-  double poisonPercentDamage; // Percent damage component of poison (based on caster's ATK)
+  double
+  poisonPercentDamage; // Percent damage component of poison (based on caster's ATK)
   bool isSilenced; // True if the card is Silenced and cannot use active skills
   int silenceTurnsRemaining; // Turns remaining for Silence
   int poisonCasterAttack; // ATK of the card that applied the poison
@@ -119,7 +152,8 @@ class Card {
   int originalSpeed; // To store base speed
   int originalMaxHp; // To store base max HP for talents like Balancing Strike
   bool isBerserkerBuffActive; // For Berserker talent
-  int originalAttack; // To store base attack before YinYang/BloodSurge modifications
+  int
+  originalAttack; // To store base attack before YinYang/BloodSurge modifications
   int originalDefense; // To store base defense before YinYang modifications
   final int? diamondPrice; // Optional: For cards purchasable with diamonds
 
@@ -153,14 +187,16 @@ class Card {
   // Helper to determine the current tier of ascension (0-4)
   // Tier 0 = White, 1 = Yellow, 2 = Blue, 3 = Pink, 4 = Red
   int get currentAscensionTier {
-    if (ascensionLevel == 0) return 0; // No stars, default to white for display if needed
+    if (ascensionLevel == 0) {
+      return 0; // No stars, default to white for display if needed
+    }
     return ((ascensionLevel - 1) / 5).floor();
   }
 
   // Helper to determine how many stars (1-5) are filled in the current tier
   int get starsInCurrentTier {
     if (ascensionLevel == 0) return 0;
-    return (ascensionLevel -1) % 5 + 1;
+    return (ascensionLevel - 1) % 5 + 1;
   }
 
   // Helper to get the color for the current tier of stars
@@ -196,10 +232,10 @@ class Card {
     this.level = 1,
     this.evolutionLevel = 0, // Default to Evo 0
     this.ascensionLevel = 0, // Default to 0 ascension
-    this.xp = 0, // Start with 0 XP
-    this.xpToNextLevel = 100, // Example: 100 XP for Lvl 1 -> 2
+    this.xp = 0,
+    // xpToNextLevel is now calculated in the constructor body
     this.currentMana = 0, // Initialize mana
-    this.maxMana = 0,     // Initialize maxMana
+    this.maxMana = 0, // Initialize maxMana
     this.isYangBuffActive = false, // Default state for YinYang
     this.isBloodSurgeAttackBuffActive = false, // Default state for Blood Surge
     this.manaRegenBonus = 0.0, // Default no mana regen bonus
@@ -272,10 +308,13 @@ class Card {
     this.isBerserkerBuffActive = false, // Default state for Berserker
     this.originalSpeed = 0, // Will be set properly
     this.originalMaxHp = 0, // Will be set properly
-    this.originalAttack = 0, // Will be set properly in GameState or TalentSystem
-    this.originalDefense = 0,// Will be set properly in GameState or TalentSystem
+    this.originalAttack =
+        0, // Will be set properly in GameState or TalentSystem
+    this.originalDefense =
+        0, // Will be set properly in GameState or TalentSystem
     this.diamondPrice,
-  }) : currentHp = maxHp {
+  }) : currentHp = maxHp,
+       xpToNextLevel = 0 /* Initialize, will be set below */ {
     // Ensure level does not exceed max level, though this should be managed by upgrade logic later
     if (level > maxCardLevel) level = maxCardLevel;
     if (level < maxCardLevel) {
@@ -379,8 +418,10 @@ class Card {
       actualHealAmount *= (1.0 - burnHealingReductionPercent);
     }
 
-    double effectiveHealingMultiplier = 1.0 + currentHealingEffectivenessBonus.clamp(0.0, 0.50);
-    int effectiveHealAmount = (actualHealAmount * effectiveHealingMultiplier).round();
+    double effectiveHealingMultiplier =
+        1.0 + currentHealingEffectivenessBonus.clamp(0.0, 0.50);
+    int effectiveHealAmount = (actualHealAmount * effectiveHealingMultiplier)
+        .round();
     currentHp += effectiveHealAmount;
     if (currentHp > maxHp) {
       currentHp = maxHp;
@@ -389,7 +430,8 @@ class Card {
 
   // Helper to calculate XP needed for the next level
   static int calculateXpToNextLevel(int currentLevel) {
-    return (currentLevel * 100) + 50; // Example formula: 150 for L1->L2, 250 for L2->L3
+    return (currentLevel * 100) +
+        50; // Example formula: 150 for L1->L2, 250 for L2->L3
   }
 }
 
@@ -397,7 +439,7 @@ class Card {
 
 String cardToJson(Card card) {
   return jsonEncode({
-    'id': card.id,
+    'id': card.id, // Save the unique instance ID
     'originalTemplateId': card.originalTemplateId,
     // Name, imageUrl, type, talent, maxMana are derived from template on load
     'maxHp': card.maxHp, // Current maxHp after all modifications
@@ -414,47 +456,73 @@ String cardToJson(Card card) {
     // currentMana is reset on load/battle start
     // isYangBuffActive, isBloodSurgeAttackBuffActive are battle states, not typically persisted this way
     // diamondPrice is part of the template, not saved per instance typically unless it changes
-    // originalAttack, originalDefense are set at battle start by talent system
+    // originalAttack, originalDefense, originalSpeed, originalMaxHp are battle states, not persisted here
   });
 }
 
 Card? cardFromJson(String jsonString) {
   try {
     Map<String, dynamic> jsonMap = jsonDecode(jsonString);
-    final String originalTemplateId = jsonMap['originalTemplateId'];
+    final String? originalTemplateId = jsonMap['originalTemplateId'] as String?;
 
-    // Find the base template from CardDefinitions
-    // Note: Using firstWhereOrNull from 'package:collection/collection.dart' would be safer
-    // but CardDefinitions.availableCards.firstWhere is used elsewhere.
-    // Ensure CardDefinitions is robust or handle template not found.
-    final template = CardDefinitions.availableCards.firstWhere(
+    if (originalTemplateId == null) {
+      // If originalTemplateId is missing, we cannot reliably reconstruct the card.
+      // This might happen for very old data or corrupted entries.
+      print(
+        "Error in cardFromJson: 'originalTemplateId' is missing. JSON: $jsonString",
+      );
+      // Optionally, try to use a fallback or default card if appropriate,
+      // or simply return null. For now, let's be strict.
+      return null;
+    }
+
+    // Combine all card definitions for lookup
+    final List<Card> allCardDefinitions = [
+      ...CardDefinitions.availableCards,
+      ...CardDefinitions.eventCards,
+    ];
+
+    final Card? template = allCardDefinitions.firstWhereOrNull(
       (c) => c.id == originalTemplateId,
-      // orElse: () => throw Exception("Card template $originalTemplateId not found during deserialization"),
     );
 
+    if (template == null) {
+      print(
+        "Warning in cardFromJson: Card template '$originalTemplateId' not found in any CardDefinitions list. Returning null. JSON: $jsonString",
+      );
+      return null;
+    }
+
     return Card(
-      id: jsonMap['id'],
+      id:
+          jsonMap['id'] ??
+          "${originalTemplateId}_instance_${DateTime.now().millisecondsSinceEpoch}", // Fallback ID if not saved
       originalTemplateId: originalTemplateId,
-      name: template.name, // Get from template
-      imageUrl: template.imageUrl, // Get from template
-      maxHp: jsonMap['maxHp'],
-      attack: jsonMap['attack'],
-      defense: jsonMap['defense'],
-      speed: jsonMap['speed'],
-      type: template.type, // Get from template
-      talent: template.talent, // Get from template
-      rarity: CardRarity.values[jsonMap['rarity']],
-      level: jsonMap['level'],
-      evolutionLevel: jsonMap['evolutionLevel'],
-      ascensionLevel: jsonMap['ascensionLevel'],
-      xp: jsonMap['xp'],
+      name: template.name, // Always use name from template
+      imageUrl: template
+          .imageUrl, // ALWAYS use imageUrl from template (which now has 'assets/')
+      maxHp:
+          jsonMap['maxHp'] ??
+          template.maxHp, // Fallback to template if not in JSON
+      attack: jsonMap['attack'] ?? template.attack,
+      defense: jsonMap['defense'] ?? template.defense,
+      speed: jsonMap['speed'] ?? template.speed,
+      type: template.type, // Always use type from template
+      talent: template.talent, // Always use talent from template
+      rarity: jsonMap['rarity'] != null
+          ? CardRarity.values[jsonMap['rarity']]
+          : template.rarity, // Fallback to template rarity
+      level: jsonMap['level'] ?? 1,
+      evolutionLevel: jsonMap['evolutionLevel'] ?? 0,
+      ascensionLevel: jsonMap['ascensionLevel'] ?? 0,
+      xp: jsonMap['xp'] ?? 0,
       // Other fields like xpToNextLevel, currentHp, currentMana, maxMana, originalAttack/Defense
       diamondPrice: template.diamondPrice, // Get from template
       // will be set by the Card constructor or later by GameState/TalentSystem.
     );
   } catch (e) {
     // Consider logging this error more formally in a real app
-    // print("Error deserializing card from JSON: $jsonString. Error: $e");
+    print("Error in cardFromJson: $e. JSON string: $jsonString");
     return null; // Return null if deserialization fails
   }
 }

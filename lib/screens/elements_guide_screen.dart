@@ -20,6 +20,8 @@ class ElementsGuideScreen extends StatelessWidget {
         ),
         title: const Text('Elements Guide'),
         toolbarHeight: 30,
+        backgroundColor: Colors.transparent, // Make AppBar transparent
+        elevation: 0, // Remove shadow
       ),
       body: ListView(
         padding: const EdgeInsets.all(16.0),
@@ -36,13 +38,60 @@ class ElementsGuideScreen extends StatelessWidget {
     List<Widget> neutral = [];
 
     for (var defenderType in CardType.values) {
-      if (attackerType == defenderType) continue; // Skip self-comparison for this display
+      if (attackerType == defenderType)
+        continue; // Skip self-comparison for this display
 
-      double multiplier = ElementalSystem.getTypeEffectivenessMultiplier(attackerType, defenderType);
+      double multiplier = ElementalSystem.getTypeEffectivenessMultiplier(
+        attackerType,
+        defenderType,
+      );
       if (multiplier > 1.0) {
-        strengths.add(Text(defenderType.toString().split('.').last, style: TextStyle(color: Colors.green.shade700)));
-      } else if (multiplier < 1.0 && multiplier > 0) { // Ensure it's a weakness, not immunity (if you add 0x)
-        weaknesses.add(Text(defenderType.toString().split('.').last, style: TextStyle(color: Colors.red.shade700)));
+        strengths.add(
+          Chip(
+            label: Text(
+              defenderType.toString().split('.').last,
+              style: const TextStyle(fontSize: 10),
+            ), // Smaller text
+            backgroundColor: Colors.green.withOpacity(0.2),
+            labelStyle: TextStyle(
+              color: Colors.green.shade800,
+              fontWeight: FontWeight.bold,
+            ),
+            avatar: Icon(
+              Icons.arrow_upward,
+              color: Colors.green.shade700,
+              size: 14, // Smaller icon
+            ),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 4,
+              vertical: 1,
+            ), // Reduced padding
+          ),
+        );
+      } else if (multiplier < 1.0 && multiplier > 0) {
+        // Ensure it's a weakness, not immunity (if you add 0x)
+        weaknesses.add(
+          Chip(
+            label: Text(
+              defenderType.toString().split('.').last,
+              style: const TextStyle(fontSize: 10),
+            ), // Smaller text
+            backgroundColor: Colors.red.withOpacity(0.2),
+            labelStyle: TextStyle(
+              color: Colors.red.shade800,
+              fontWeight: FontWeight.bold,
+            ),
+            avatar: Icon(
+              Icons.arrow_downward,
+              color: Colors.red.shade700,
+              size: 14, // Smaller icon
+            ),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 4,
+              vertical: 1,
+            ), // Reduced padding
+          ),
+        );
       } else {
         // Could also explicitly list neutral interactions if desired
         // For now, we'll just show strengths and weaknesses
@@ -50,32 +99,90 @@ class ElementsGuideScreen extends StatelessWidget {
     }
 
     return Card(
-      margin: const EdgeInsets.symmetric(vertical: 8.0),
-      elevation: 3,
+      margin: const EdgeInsets.symmetric(vertical: 6.0), // Reduced margin
+      elevation: 2, // Slightly reduced elevation
       child: Padding(
-        padding: const EdgeInsets.all(12.0),
+        padding: const EdgeInsets.all(10.0), // Reduced padding
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               attackerType.toString().split('.').last,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: _getElementColor(attackerType)),
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                // Smaller title
+                fontWeight: FontWeight.bold,
+                color: _getElementColor(attackerType),
+              ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6), // Reduced spacing
             if (strengths.isNotEmpty) ...[
-              Text("Strong Against (x1.5):", style: Theme.of(context).textTheme.titleMedium),
-              Wrap(spacing: 8.0, runSpacing: 4.0, children: strengths),
-              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Icon(
+                    Icons.check_circle_outline,
+                    color: Colors.green.shade700,
+                    size: 18, // Smaller icon
+                  ),
+                  const SizedBox(width: 6), // Reduced spacing
+                  Text(
+                    "Strong Against (x1.5):",
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      // Smaller label
+                      color: Colors.green.shade800,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 3), // Reduced spacing
+              Wrap(
+                spacing: 6.0,
+                runSpacing: 3.0,
+                children: strengths,
+              ), // Reduced spacing
+              const SizedBox(height: 6), // Reduced spacing
             ],
             if (weaknesses.isNotEmpty) ...[
-              Text("Weak Against (x0.75):", style: Theme.of(context).textTheme.titleMedium),
-              Wrap(spacing: 8.0, runSpacing: 4.0, children: weaknesses),
-              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Icon(
+                    Icons.cancel_outlined,
+                    color: Colors.red.shade700,
+                    size: 18, // Smaller icon
+                  ),
+                  const SizedBox(width: 6), // Reduced spacing
+                  Text(
+                    "Weak Against (x0.75):",
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      // Smaller label
+                      color: Colors.red.shade800,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 3), // Reduced spacing
+              Wrap(
+                spacing: 6.0,
+                runSpacing: 3.0,
+                children: weaknesses,
+              ), // Reduced spacing
+              const SizedBox(height: 6), // Reduced spacing
             ],
-            if (strengths.isEmpty && weaknesses.isEmpty && attackerType != CardType.NEUTRAL)
-              Text("Neutral against all other types.", style: Theme.of(context).textTheme.bodyMedium),
+            if (strengths.isEmpty &&
+                weaknesses.isEmpty &&
+                attackerType != CardType.NEUTRAL)
+              Text(
+                "Neutral against all other types.",
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  fontStyle: FontStyle.italic,
+                ), // Smaller text
+              ),
             if (attackerType == CardType.NEUTRAL)
-              Text("Neutral: Deals normal damage to all types and receives normal damage from all types.", style: Theme.of(context).textTheme.bodyMedium),
+              Text(
+                "Neutral: Deals normal damage to all types and receives normal damage from all types.",
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  fontStyle: FontStyle.italic,
+                ), // Smaller text
+              ),
           ],
         ),
       ),

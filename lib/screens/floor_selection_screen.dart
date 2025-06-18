@@ -11,7 +11,8 @@ class FloorSelectionScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final gameState = context.watch<GameState>();
 
-    return ThemedScaffold( // Use ThemedScaffold
+    return ThemedScaffold(
+      // Use ThemedScaffold
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -24,6 +25,8 @@ class FloorSelectionScreen extends StatelessWidget {
         ),
         title: const Text('Select Floor'),
         toolbarHeight: 30, // Set the AppBar height to 30
+        backgroundColor: Colors.transparent, // Make AppBar transparent
+        elevation: 0, // Remove shadow
       ),
       body: ListView.builder(
         padding: const EdgeInsets.all(16.0),
@@ -31,16 +34,28 @@ class FloorSelectionScreen extends StatelessWidget {
         itemBuilder: (context, index) {
           final floor = gameState.gameFloors[index];
           final bool isUnlocked = gameState.unlockedFloorIds.contains(floor.id);
-          final bool isCompleted = gameState.completedFloorIds.contains(floor.id);
+          final bool isCompleted = gameState.completedFloorIds.contains(
+            floor.id,
+          );
 
           return Card(
             elevation: isUnlocked ? 4.0 : 1.0,
             margin: const EdgeInsets.symmetric(vertical: 8.0),
-            color: isUnlocked ? (isCompleted ? Colors.green.shade100 : Colors.white) : Colors.grey.shade300,
+            color: isUnlocked
+                ? (isCompleted ? Colors.green.shade100 : Colors.white)
+                : Colors.grey.shade300,
             child: ListTile(
               leading: Icon(
-                isUnlocked ? (isCompleted ? Icons.check_circle : Icons.lock_open_outlined) : Icons.lock_outline,
-                color: isUnlocked ? (isCompleted ? Colors.green : Theme.of(context).colorScheme.primary) : Colors.grey.shade700,
+                isUnlocked
+                    ? (isCompleted
+                          ? Icons.check_circle
+                          : Icons.lock_open_outlined)
+                    : Icons.lock_outline,
+                color: isUnlocked
+                    ? (isCompleted
+                          ? Colors.green
+                          : Theme.of(context).colorScheme.primary)
+                    : Colors.grey.shade700,
                 size: 30,
               ),
               title: Text(
@@ -52,24 +67,39 @@ class FloorSelectionScreen extends StatelessWidget {
               ),
               subtitle: Text(
                 "${floor.description}\nCompletion Reward: ${floor.rewardForFloorCompletion} Currency",
-                style: TextStyle(color: isUnlocked ? Colors.black87 : Colors.grey.shade600),
+                style: TextStyle(
+                  color: isUnlocked ? Colors.black87 : Colors.grey.shade600,
+                ),
               ),
               trailing: isUnlocked && !isCompleted
                   ? ElevatedButton(
                       child: const Text('Battle'),
-                      onPressed: () { // Navigate to Level Selection
+                      onPressed: () {
+                        // Navigate to Level Selection
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => LevelSelectionScreen(floor: floor)),
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                LevelSelectionScreen(floor: floor),
+                          ),
                         );
                       },
                     )
-                  : (isCompleted ? const Chip(label: Text("Completed"), backgroundColor: Colors.green) : null),
+                  : (isCompleted
+                        ? const Chip(
+                            label: Text("Completed"),
+                            backgroundColor: Colors.green,
+                          )
+                        : null),
               onTap: isUnlocked && !isCompleted
-                  ? () { // Navigate to Level Selection
+                  ? () {
+                      // Navigate to Level Selection
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => LevelSelectionScreen(floor: floor)),
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              LevelSelectionScreen(floor: floor),
+                        ),
                       );
                     }
                   : null, // Cannot tap locked or completed floors to start battle

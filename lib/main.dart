@@ -11,9 +11,8 @@ import 'screens/gold_shop_screen.dart'; // Import GoldShopScreen
 import 'screens/battle_screen.dart';
 import 'screens/floor_selection_screen.dart';
 import 'screens/card_pedia_screen.dart'; // Import the new CardPediaScreen
-import 'screens/talent_guide_landing_screen.dart'; // Import the new Talent Guide Landing Screen
+import 'screens/talent_guide_screen.dart'; // Import the new Talent Guide Landing Screen
 import 'screens/elements_guide_screen.dart'; // Import the new Elements Guide Screen
-import 'screens/talents_list_guide_screen.dart'; // Import the new Talents List Guide Screen
 import 'screens/event_cards_shop_screen.dart'; // Import Event Cards Shop Screen
 import 'screens/event_screen.dart'; // Import the actual EventScreen
 import 'screens/raid_battle_screen.dart'; // Import RaidBattleScreen
@@ -22,13 +21,17 @@ import 'screens/user_profile_screen.dart'; // Import UserProfileScreen
 import 'screens/login_screen.dart'; // Import LoginScreen
 import 'screens/register_screen.dart'; // Import RegisterScreen
 import 'widgets/themed_scaffold.dart'; // Import ThemedScaffold
+import 'screens/raid_guide_screen.dart'; // Import RaidGuideScreen
 
-void main() async { // Make main async
+void main() async {
+  // Make main async
   WidgetsFlutterBinding.ensureInitialized(); // Ensure Flutter bindings are initialized
-  await Firebase.initializeApp( // Initialize Firebase
+  await Firebase.initializeApp(
+    // Initialize Firebase
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  runApp( // Your existing runApp call
+  runApp(
+    // Your existing runApp call
     ChangeNotifierProvider(
       create: (context) => GameState(),
       child: const MyApp(),
@@ -93,35 +96,55 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         ),
         useMaterial3: true,
         appBarTheme: AppBarTheme(
-          backgroundColor: ColorScheme.fromSeed(seedColor: Colors.deepPurple).primaryContainer, // Consistent AppBar color
+          backgroundColor: ColorScheme.fromSeed(
+            seedColor: Colors.deepPurple,
+          ).primaryContainer, // Consistent AppBar color
         ),
-        inputDecorationTheme: const InputDecorationTheme(filled: true, fillColor: Colors.white24)
-
+        inputDecorationTheme: const InputDecorationTheme(
+          filled: true,
+          fillColor: Colors.white24,
+        ),
       ),
       home: const AuthWrapper(), // Use AuthWrapper to determine initial screen
       routes: {
         // '/': (context) => const HomeScreen(), // AuthWrapper handles initial '/'
         '/inventory': (context) => const InventoryScreen(),
-        '/shop_landing': (context) => const ShopLandingScreen(), // Changed route and screen
-        '/gold_shop': (context) => const GoldShopScreen(), // Added GoldShopScreen route
+        '/raid_guide': (context) =>
+            const RaidGuideScreen(), // Added RaidGuideScreen route
+        '/shop_landing': (context) =>
+            const ShopLandingScreen(), // Changed route and screen
+        '/gold_shop': (context) =>
+            const GoldShopScreen(), // Added GoldShopScreen route
         '/battle': (context) => const BattleScreen(),
         '/floor_selection': (context) => const FloorSelectionScreen(),
         '/card_pedia': (context) => const CardPediaScreen(),
-        '/talent_guide': (context) => const TalentGuideLandingScreen(),
+        '/talent_guide': (context) => const TalentGuideScreen(),
         '/elements_guide': (context) => const ElementsGuideScreen(),
-        '/talents_list_guide': (context) => const TalentsListGuideScreen(),
-        '/user_profile': (context) => const UserProfileScreen(), // Updated route
-        '/event_cards_shop': (context) => const EventCardsShopScreen(), // Added route
-        '/events': (context) => const EventScreen(), 
-        '/raid_lobby': (context) { // Route for RaidLobbyScreen
+        '/user_profile': (context) =>
+            const UserProfileScreen(), // Updated route
+        '/event_cards_shop': (context) =>
+            const EventCardsShopScreen(), // Added route
+        '/events': (context) => const EventScreen(),
+        '/raid_lobby': (context) {
+          // Route for RaidLobbyScreen
           final raidId = ModalRoute.of(context)!.settings.arguments as String?;
-          if (raidId == null) return const PlaceholderScreen(title: "Error: Raid ID missing"); // Or handle error differently
+          if (raidId == null)
+            return const PlaceholderScreen(
+              title: "Error: Raid ID missing",
+            ); // Or handle error differently
           return RaidLobbyScreen(raidId: raidId);
         },
-        '/raid_battle': (context) { // Route for RaidBattleScreen
-          final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
-          if (args == null || args['raidId'] == null || args['playerTeamCardIds'] == null) {
-            return const PlaceholderScreen(title: "Error: Missing arguments for battle");
+        '/raid_battle': (context) {
+          // Route for RaidBattleScreen
+          final args =
+              ModalRoute.of(context)!.settings.arguments
+                  as Map<String, dynamic>?;
+          if (args == null ||
+              args['raidId'] == null ||
+              args['playerTeamCardIds'] == null) {
+            return const PlaceholderScreen(
+              title: "Error: Missing arguments for battle",
+            );
           }
           return RaidBattleScreen(
             raidId: args['raidId'] as String,
@@ -129,7 +152,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           );
         },
         // Keep named routes for explicit navigation if needed
-        '/login': (context) => const LoginScreen(), 
+        '/login': (context) => const LoginScreen(),
         '/register': (context) => const RegisterScreen(),
         '/home': (context) => const HomeScreen(),
       },
@@ -161,7 +184,8 @@ class PlaceholderScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ThemedScaffold( // Use ThemedScaffold
+    return ThemedScaffold(
+      // Use ThemedScaffold
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -176,7 +200,12 @@ class PlaceholderScreen extends StatelessWidget {
         toolbarHeight: 30, // Set the AppBar height to 30
       ),
       body: Center(
-        child: Text("$title Screen - Coming Soon!", style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: Colors.white.withOpacity(0.85))), // Adjusted text color for better visibility on background
+        child: Text(
+          "$title Screen - Coming Soon!",
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+            color: Colors.white.withOpacity(0.85),
+          ),
+        ), // Adjusted text color for better visibility on background
       ),
     );
   }

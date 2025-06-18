@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../widgets/themed_scaffold.dart';
 import '../game_state.dart';
-import '../card_model.dart' as app_card; // Aliased import for ShardType and Card model
-// To get total number of card templates
+import '../card_model.dart' as app_card;
+import 'package:flutter/services.dart'; // For input formatters
 
 class UserProfileScreen extends StatelessWidget {
   const UserProfileScreen({super.key});
@@ -11,181 +11,605 @@ class UserProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final gameState = context.watch<GameState>();
+    final theme = Theme.of(context);
+    final Color neonAccentColor =
+        theme.colorScheme.secondary; // Or choose a specific neon color
+    final Color primaryTextColor = Colors.white.withOpacity(0.9);
+    final Color secondaryTextColor = Colors.white.withOpacity(0.7);
 
     return ThemedScaffold(
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          iconSize: 20.0,
+          icon: Icon(
+            Icons.arrow_back_ios_new,
+            color: primaryTextColor.withOpacity(0.8),
+            size: 16.0, // Further reduced size
+          ), // Changed icon and reduced size
           padding: const EdgeInsets.all(5.0),
           tooltip: MaterialLocalizations.of(context).backButtonTooltip,
           onPressed: () {
             Navigator.of(context).pop();
           },
         ),
-        title: const Text('User Profile'),
-        toolbarHeight: 30,
+        title: Text(
+          'OPERATIVE PROFILE', // More thematic title
+          style: TextStyle(
+            fontWeight: FontWeight.w600, // Slightly less bold
+            color: primaryTextColor,
+            letterSpacing: 1.2, // Further reduced letter spacing
+            fontSize: 14, // Further reduced font size
+          ),
+        ),
+        centerTitle: true,
+        backgroundColor: Colors.black.withOpacity(0.5),
+        elevation: 0, // Flat design
+        toolbarHeight: 40, // Further reduced toolbar height
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildSectionTitle(context, "Player Resources"),
-            _buildPlayerResources(context, gameState),
-            const SizedBox(height: 20),
-            _buildSectionTitle(context, "Game Progress"),
-            _buildStatTile(context, "Ultra Rare Cards Owned:", "${gameState.userOwnedCards.where((card) => card.rarity == app_card.CardRarity.ULTRA_RARE).length}"),
-            _buildStatTile(context, "Highest Floor Reached:", _getHighestFloorReached(gameState)),
-            _buildStatTile(context, "Total Levels Completed:", _getTotalLevelsCompleted(gameState).toString()),
-            const SizedBox(height: 30),
-            Center(
-              child: ElevatedButton.icon(
-                icon: const Icon(Icons.warning_amber_outlined, color: Colors.white),
-                label: const Text("Reset Game Progress", style: TextStyle(color: Colors.white)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red.shade700,
-                  padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
-                ),
-                onPressed: () => _confirmResetDialog(context, gameState),
-              ),
+            // User Header
+            _buildUserHeader(
+              context,
+              gameState,
+              neonAccentColor,
+              primaryTextColor,
+              secondaryTextColor,
             ),
+            const SizedBox(height: 16), // Further Reduced
+            // Stats Grid
+            _buildStatsGrid(
+              context,
+              gameState,
+              neonAccentColor,
+              primaryTextColor,
+              secondaryTextColor,
+            ),
+            const SizedBox(height: 24), // Spacing after stats grid
+            // Featured Cards Display
+            _buildFeaturedCardsDisplay(
+              context,
+              gameState,
+              neonAccentColor,
+              primaryTextColor,
+              secondaryTextColor,
+            ),
+            const SizedBox(height: 20),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildSectionTitle(BuildContext context, String title) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0),
-      child: Text(
-        title,
-        style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold, color: Colors.white.withOpacity(0.9)),
-      ),
+  Widget _buildUserHeader(
+    BuildContext context,
+    GameState gameState,
+    Color neonAccentColor,
+    Color primaryTextColor,
+    Color secondaryTextColor,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          gameState.currentAuthUsername.isNotEmpty
+              ? gameState.currentAuthUsername.toUpperCase()
+              : "OPERATIVE",
+          style: TextStyle(
+            fontSize: 22, // Further Reduced
+            fontWeight: FontWeight.bold,
+            color: primaryTextColor,
+            letterSpacing: 1.5,
+            shadows: [
+              Shadow(blurRadius: 10.0, color: neonAccentColor.withOpacity(0.7)),
+            ],
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          "SERVER: Butterfly Version | UID: ${gameState.currentUserDisplayUid}",
+          style: TextStyle(
+            fontSize: 11,
+            color: secondaryTextColor,
+          ), // Further Reduced
+        ),
+        // Conditionally display user status if it's not empty
+        if (gameState.userStatusMessage.isNotEmpty ||
+            gameState.currentPlayerId ==
+                gameState
+                    .currentPlayerId) // Always show for own profile to allow editing
+          _buildUserStatus(
+            context,
+            gameState,
+            neonAccentColor,
+            primaryTextColor,
+            secondaryTextColor,
+          ),
+      ],
     );
   }
 
-  Widget _buildStatTile(BuildContext context, String label, String value) {
-    return Card( // Use Flutter's Card widget directly
-      margin: const EdgeInsets.symmetric(vertical: 4.0),
-      color: Theme.of(context).colorScheme.surface.withOpacity(0.8),
-      child: ListTile(
-        title: Text(label, style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.white70)),
-        trailing: Text(value, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: Colors.white)),
-      ),
-    );
-  }
-
-  String _getHighestFloorReached(GameState gameState) {
-    if (gameState.unlockedFloorIds.isEmpty) return "Floor 1 (Not Started)";
-    int highestFloorNumber = 0;
-    String highestFloorName = "N/A";
-
-    for (var floorId in gameState.unlockedFloorIds) {
-      final floor = gameState.gameFloors.firstWhere((f) => f.id == floorId, orElse: () => gameState.gameFloors.first);
-      final floorNumber = gameState.gameFloors.indexOf(floor) + 1;
-      if (floorNumber > highestFloorNumber) {
-        highestFloorNumber = floorNumber;
-        highestFloorName = floor.name;
+  Widget _buildStatsGrid(
+    BuildContext context,
+    GameState gameState,
+    Color neonAccentColor,
+    Color primaryTextColor,
+    Color secondaryTextColor,
+  ) {
+    // Calculate Base Level (Max Unlocked Floor)
+    String maxUnlockedFloorDisplay = "Floor 1";
+    if (gameState.unlockedFloorIds.isNotEmpty) {
+      int highestFloorNumber = 0;
+      for (var floorId in gameState.unlockedFloorIds) {
+        final floorIndex = gameState.gameFloors.indexWhere(
+          (f) => f.id == floorId,
+        );
+        if (floorIndex != -1 && (floorIndex + 1) > highestFloorNumber) {
+          highestFloorNumber = floorIndex + 1;
+        }
+      }
+      if (highestFloorNumber > 0) {
+        maxUnlockedFloorDisplay = "Floor $highestFloorNumber";
       }
     }
-    return "$highestFloorName (Floor $highestFloorNumber)";
-  }
 
-  int _getTotalLevelsCompleted(GameState gameState) {
-    int total = 0; // Ensure total is explicitly int
-    gameState.completedLevelsPerFloor.forEach((floorId, levels) {
-      total += levels.length;
-    });
-    return total;
-  }
+    // Card Count (UR Cards)
+    int urCardCount = gameState.userOwnedCards
+        .where((card) => card.rarity == app_card.CardRarity.ULTRA_RARE)
+        .length;
 
-  // Reusing the resource display from HomeScreen for consistency
-  Widget _buildPlayerResources(BuildContext context, GameState gameState) {
-    List<Widget> resourceChips = [];
+    // Card Power (Highest Level Card Stats)
+    String highestLevelCardPowerDisplay = "N/A";
+    if (gameState.userOwnedCards.isNotEmpty) {
+      app_card.Card highestLevelCard = gameState.userOwnedCards.reduce(
+        (currentMax, card) => card.level > currentMax.level ? card : currentMax,
+      );
+      int power =
+          highestLevelCard.attack +
+          highestLevelCard.defense +
+          highestLevelCard.maxHp ~/ 10 +
+          highestLevelCard.speed;
+      highestLevelCardPowerDisplay = power.toString();
+    }
 
-    // Gold
-    resourceChips.add(_buildResourceChip(context, Icons.monetization_on_outlined, Theme.of(context).colorScheme.secondaryContainer, gameState.playerCurrency.toString(), "Gold"));
-    // Diamonds
-    resourceChips.add(_buildResourceChip(context, Icons.diamond_outlined, Colors.blue.shade300, gameState.playerDiamonds.toString(), "Diamonds"));
-    // Souls
-    resourceChips.add(_buildResourceChip(context, Icons.local_fire_department_outlined, Colors.orange.shade800, gameState.playerSouls.toString(), "Souls"));
+    final stats = {
+      "BASE LEVEL": maxUnlockedFloorDisplay,
+      "UR CARD COUNT": urCardCount.toString(),
+      "MAX CARD POWER": highestLevelCardPowerDisplay,
+    };
 
-    // Shards
-    for (app_card.ShardType shardType in app_card.ShardType.values) { // Use aliased ShardType
-      final count = gameState.playerShards[shardType] ?? 0;
-      if (count > 0) { // Optionally, only display if count > 0
-        resourceChips.add(
-          Tooltip(
-            message: shardType.toString().split('.').last.replaceAll('_SHARD', '').replaceAll('_', ' '),
-            child: Chip(
-              avatar: Icon(_getShardIcon(shardType), color: _getShardColor(shardType), size: 16),
-              label: Text('$count', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-              backgroundColor: Colors.black.withOpacity(0.5),
-              padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 2.0),
-              labelPadding: const EdgeInsets.only(left: 2.0, right: 4.0),
-            ),
+    return GridView.count(
+      crossAxisCount: 3,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      childAspectRatio: 1.8, // Adjusted for 3 columns - items will be shorter
+      mainAxisSpacing: 6, // Further Reduced
+      crossAxisSpacing: 6, // Further Reduced
+      children: stats.entries.map((entry) {
+        return Container(
+          padding: const EdgeInsets.all(8), // Further Reduced internal padding
+          decoration: BoxDecoration(
+            color: Colors.black.withOpacity(0.6),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: neonAccentColor.withOpacity(0.5)),
+            boxShadow: [
+              BoxShadow(
+                color: neonAccentColor.withOpacity(0.2), // Reduced shadow
+                blurRadius: 5, // Further Reduced
+                spreadRadius: 1,
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                entry.key,
+                style: TextStyle(
+                  color: secondaryTextColor,
+                  fontSize: 9, // Slightly smaller for 3 columns
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.8,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                entry.value,
+                style: TextStyle(
+                  color: primaryTextColor,
+                  fontSize: 13, // Slightly smaller for 3 columns
+                  fontWeight: FontWeight.bold,
+                  shadows: [
+                    Shadow(
+                      blurRadius: 5.0,
+                      color: neonAccentColor.withOpacity(0.5),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         );
+      }).toList(),
+    );
+  }
+
+  Widget _buildFeaturedCardsDisplay(
+    BuildContext context,
+    GameState gameState,
+    Color neonAccentColor,
+    Color primaryTextColor,
+    Color secondaryTextColor,
+  ) {
+    final displayedCardsJson = gameState.displayedCardJsonStrings;
+    List<app_card.Card> cardsToDisplay = [];
+    for (String jsonString in displayedCardsJson) {
+      app_card.Card? card = app_card.cardFromJson(jsonString);
+      if (card != null) {
+        cardsToDisplay.add(card);
       }
     }
 
-    return Card( // Use Flutter's Card widget directly
-      color: Theme.of(context).colorScheme.surface.withOpacity(0.8),
-      child: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Wrap(
-          spacing: 8.0,
-          runSpacing: 8.0,
-          children: resourceChips,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              "SHOWCASE",
+              style: TextStyle(
+                color: primaryTextColor,
+                fontSize: 14, // Compact title
+                fontWeight: FontWeight.w600,
+                letterSpacing: 1.2,
+              ),
+            ),
+            IconButton(
+              icon: Icon(
+                Icons.edit_rounded,
+                color: neonAccentColor.withOpacity(0.8),
+                size: 20,
+              ),
+              tooltip: "Edit Showcase Cards",
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              onPressed: () {
+                // TODO: Navigate to card selection screen
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text("Navigate to Edit Showcase Screen (TBD)"),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 8.0),
+          decoration: BoxDecoration(
+            color: Colors.black.withOpacity(0.4),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: neonAccentColor.withOpacity(0.3)),
+          ),
+          child: Builder(
+            // Use Builder to correctly scope the child
+            builder: (context) {
+              if (cardsToDisplay.isEmpty &&
+                  gameState.displayedCardJsonStrings.every(
+                    (json) => json.isEmpty,
+                  )) {
+                // Show 5 empty slots if no cards are showcased at all
+                return Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: List.generate(
+                    5,
+                    (index) => InkWell(
+                      onTap: () async {
+                        // Logic for adding a card to an empty slot
+                        app_card.Card? selectedCardFromDialog =
+                            await _showCardSelectionDialog(
+                              context,
+                              gameState,
+                              neonAccentColor,
+                            );
+                        if (selectedCardFromDialog != null) {
+                          List<String> currentCardInstanceIds = List.filled(
+                            5,
+                            "",
+                            growable: false,
+                          );
+                          // Since it's empty, just place the new card at the tapped index
+                          currentCardInstanceIds[index] =
+                              selectedCardFromDialog.id;
+                          await gameState.setDisplayedProfileCards(
+                            currentCardInstanceIds
+                                .where((id) => id.isNotEmpty)
+                                .toList(),
+                          );
+                        }
+                      },
+                      child: _buildEmptySlot(
+                        context,
+                        secondaryTextColor,
+                        neonAccentColor,
+                      ),
+                    ),
+                  ),
+                );
+              } else {
+                // Display cards or empty slots
+                return Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: List.generate(5, (index) {
+                    app_card.Card? cardInSlot;
+                    if (index < gameState.displayedCardJsonStrings.length) {
+                      final cardJson =
+                          gameState.displayedCardJsonStrings[index];
+                      if (cardJson.isNotEmpty) {
+                        // Ensure json is not empty before parsing
+                        cardInSlot = app_card.cardFromJson(cardJson);
+                      }
+                    }
+
+                    return InkWell(
+                      onTap: () async {
+                        app_card.Card? selectedCardFromDialog =
+                            await _showCardSelectionDialog(
+                              context,
+                              gameState,
+                              neonAccentColor,
+                            );
+                        if (selectedCardFromDialog != null) {
+                          List<String> currentCardInstanceIds = List.filled(
+                            5,
+                            "",
+                            growable: false,
+                          );
+                          for (
+                            int i = 0;
+                            i < gameState.displayedCardJsonStrings.length;
+                            i++
+                          ) {
+                            if (i < 5 &&
+                                gameState
+                                    .displayedCardJsonStrings[i]
+                                    .isNotEmpty) {
+                              final existingCard = app_card.cardFromJson(
+                                gameState.displayedCardJsonStrings[i],
+                              );
+                              if (existingCard != null) {
+                                currentCardInstanceIds[i] = existingCard.id;
+                              }
+                            }
+                          }
+                          int alreadyAtIndex = currentCardInstanceIds.indexOf(
+                            selectedCardFromDialog.id,
+                          );
+                          if (alreadyAtIndex != -1 && alreadyAtIndex != index) {
+                            currentCardInstanceIds[alreadyAtIndex] = "";
+                          }
+                          currentCardInstanceIds[index] =
+                              selectedCardFromDialog.id;
+                          await gameState.setDisplayedProfileCards(
+                            currentCardInstanceIds
+                                .where((id) => id.isNotEmpty)
+                                .toList(),
+                          );
+                        }
+                      },
+                      child: cardInSlot != null
+                          ? _buildSmallCard(
+                              context,
+                              cardInSlot,
+                              neonAccentColor,
+                            )
+                          : _buildEmptySlot(
+                              context,
+                              secondaryTextColor,
+                              neonAccentColor,
+                            ),
+                    );
+                  }),
+                );
+              }
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSmallCard(
+    BuildContext context,
+    app_card.Card card,
+    Color neonAccentColor,
+  ) {
+    return Container(
+      width: 55, // Very small width
+      height: 75, // Very small height
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(
+          color: app_card.getRarityColor(card.rarity).withOpacity(0.9),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: app_card.getRarityColor(card.rarity).withOpacity(0.5),
+            blurRadius: 4,
+            spreadRadius: 0.5,
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(2.5),
+        child: Image.asset(
+          card.imageUrl.isNotEmpty
+              ? card.imageUrl
+              : "assets/Themes/background_one.jpg", // Fallback
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            return Icon(
+              Icons.broken_image_outlined,
+              color: Colors.white.withOpacity(0.5),
+              size: 24,
+            );
+          },
         ),
       ),
     );
   }
 
-  Widget _buildResourceChip(BuildContext context, IconData icon, Color iconColor, String value, String tooltipMessage) {
-    return Tooltip(
-      message: tooltipMessage,
-      child: Chip(
-        avatar: Icon(icon, color: iconColor, size: 18),
-        label: Text(value, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-        backgroundColor: Colors.black.withOpacity(0.5),
-        elevation: 1,
-        padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 2.0),
-        labelPadding: const EdgeInsets.only(left: 4.0, right: 6.0),
-      ),
-    );
-  }
-
-  Future<void> _confirmResetDialog(BuildContext context, GameState gameState) async {
-    return showDialog<void>(
+  // Helper method to show card selection dialog
+  Future<app_card.Card?> _showCardSelectionDialog(
+    BuildContext context,
+    GameState gameState,
+    Color neonAccentColor,
+  ) async {
+    final theme = Theme.of(context);
+    return await showDialog<app_card.Card>(
       context: context,
-      barrierDismissible: false, // User must tap button!
       builder: (BuildContext dialogContext) {
+        final availableCards =
+            gameState.userOwnedCards; // All cards owned by the user
+
         return AlertDialog(
-          title: const Text('Reset Game Progress?'),
-          content: const SingleChildScrollView(
-            child: ListBody(
-              children: <Widget>[
-                Text('Are you sure you want to reset all your game progress?'),
-                Text('This action cannot be undone.'),
-              ],
+          backgroundColor: Colors.grey[900]!.withOpacity(0.95),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: BorderSide(color: neonAccentColor.withOpacity(0.7)),
+          ),
+          title: Text(
+            'Select Card for Showcase',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
             ),
           ),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: availableCards.isEmpty
+                ? Center(
+                    child: Text(
+                      "No cards in inventory.",
+                      style: TextStyle(color: Colors.white70, fontSize: 14),
+                    ),
+                  )
+                : ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: availableCards.length,
+                    itemBuilder: (BuildContext itemContext, int index) {
+                      final card = availableCards[index];
+                      bool isAlreadyShowcased = gameState
+                          .displayedCardJsonStrings
+                          .any((json) {
+                            final showcasedCard = app_card.cardFromJson(json);
+                            return showcasedCard?.id == card.id;
+                          });
+
+                      return Material(
+                        // Wrap with Material for InkWell splash
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () {
+                            Navigator.of(dialogContext).pop(card);
+                          },
+                          splashColor: neonAccentColor.withOpacity(0.3),
+                          highlightColor: neonAccentColor.withOpacity(0.2),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8.0),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 40,
+                                  height: 60,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(4),
+                                    border: Border.all(
+                                      color: app_card
+                                          .getRarityColor(card.rarity)
+                                          .withOpacity(0.9),
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(3),
+                                    child: Image.asset(
+                                      card.imageUrl.isNotEmpty
+                                          ? card.imageUrl
+                                          : "assets/Themes/background_one.jpg",
+                                      fit: BoxFit.cover,
+                                      errorBuilder:
+                                          (context, error, stackTrace) {
+                                            return Icon(
+                                              Icons.broken_image_outlined,
+                                              color: Colors.white.withOpacity(
+                                                0.5,
+                                              ),
+                                              size: 20,
+                                            );
+                                          },
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        card.name,
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                      Text(
+                                        'Lvl ${card.level} - ${card.rarity.toString().split('.').last}',
+                                        style: TextStyle(
+                                          color: Colors.white70,
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                if (isAlreadyShowcased)
+                                  Icon(
+                                    Icons.check_circle,
+                                    color: neonAccentColor.withOpacity(0.7),
+                                    size: 18,
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+          actionsAlignment: MainAxisAlignment.center,
+          actionsPadding: const EdgeInsets.only(bottom: 10.0),
           actions: <Widget>[
             TextButton(
-              child: const Text('Cancel'),
-              onPressed: () => Navigator.of(dialogContext).pop(),
-            ),
-            TextButton(
-              child: const Text('RESET', style: TextStyle(color: Colors.red)),
+              child: Text(
+                'Cancel',
+                style: TextStyle(
+                  color: theme.colorScheme.secondary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               onPressed: () {
-                gameState.resetToDefaultState(); // Call your reset logic
-                Navigator.of(dialogContext).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Game progress has been reset."), backgroundColor: Colors.orange),
-                );
+                Navigator.of(dialogContext).pop(null);
               },
             ),
           ],
@@ -193,34 +617,151 @@ class UserProfileScreen extends StatelessWidget {
       },
     );
   }
-}
 
-// Helper methods for shard display (can be moved to a common utility file if used elsewhere)
-// These are copied from home_screen.dart for now. Consider refactoring to a shared utility.
-IconData _getShardIcon(app_card.ShardType shardType) { // Use aliased ShardType
-  switch (shardType) {
-    case app_card.ShardType.FIRE_SHARD: return Icons.whatshot;
-    case app_card.ShardType.WATER_SHARD: return Icons.water_drop;
-    case app_card.ShardType.GRASS_SHARD: return Icons.eco_outlined;
-    case app_card.ShardType.GROUND_SHARD: return Icons.public_outlined;
-    case app_card.ShardType.ELECTRIC_SHARD: return Icons.flash_on_outlined;
-    case app_card.ShardType.NEUTRAL_SHARD: return Icons.radio_button_unchecked_outlined;
-    case app_card.ShardType.LIGHT_SHARD: return Icons.lightbulb_outline;
-    case app_card.ShardType.DARK_SHARD: return Icons.nightlight_round_outlined;
-    default: return Icons.grain;
+  Widget _buildEmptySlot(
+    BuildContext context,
+    Color secondaryTextColor,
+    Color neonAccentColor,
+  ) {
+    return Container(
+      width: 55,
+      height: 75,
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: neonAccentColor.withOpacity(0.4), width: 1),
+      ),
+      child: Icon(
+        Icons.add_circle_outline_rounded,
+        color: neonAccentColor.withOpacity(0.7),
+        size: 24,
+      ),
+    );
   }
 }
 
-Color _getShardColor(app_card.ShardType shardType) { // Use aliased ShardType
-  switch (shardType) {
-    case app_card.ShardType.FIRE_SHARD: return Colors.red.shade700;
-    case app_card.ShardType.WATER_SHARD: return Colors.blue.shade700;
-    case app_card.ShardType.GRASS_SHARD: return Colors.green.shade700;
-    case app_card.ShardType.GROUND_SHARD: return Colors.brown.shade600;
-    case app_card.ShardType.ELECTRIC_SHARD: return Colors.yellow.shade800;
-    case app_card.ShardType.NEUTRAL_SHARD: return Colors.grey.shade700;
-    case app_card.ShardType.LIGHT_SHARD: return Colors.yellow.shade300;
-    case app_card.ShardType.DARK_SHARD: return Colors.deepPurple.shade700;
-    default: return Colors.grey.shade600;
-  }
+Widget _buildUserStatus(
+  BuildContext context,
+  GameState gameState,
+  Color neonAccentColor,
+  Color primaryTextColor,
+  Color secondaryTextColor,
+) {
+  // Assuming this screen is always for the currently logged-in user for editing purposes.
+  // If it can display other users' profiles, you'd need a flag to enable/disable onTap.
+  return Padding(
+    padding: const EdgeInsets.only(top: 4.0), // Add some space above the status
+    child: InkWell(
+      onTap: () {
+        // Only allow editing if it's the current user's profile
+        // This check might be redundant if this screen is always for the current user
+        // but good for clarity if it could be used for others.
+        _showEditStatusDialog(
+          context,
+          gameState,
+          neonAccentColor,
+          primaryTextColor,
+          secondaryTextColor,
+        );
+      },
+      child: Text(
+        gameState.userStatusMessage.isNotEmpty
+            ? gameState.userStatusMessage
+            : "Tap to set status...",
+        style: TextStyle(
+          fontSize: 11,
+          color: gameState.userStatusMessage.isNotEmpty
+              ? secondaryTextColor.withOpacity(0.8)
+              : neonAccentColor.withOpacity(
+                  0.7,
+                ), // Different color for placeholder
+          fontStyle: gameState.userStatusMessage.isNotEmpty
+              ? FontStyle.italic
+              : FontStyle.normal,
+        ),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+    ),
+  );
+}
+
+Future<void> _showEditStatusDialog(
+  BuildContext context,
+  GameState gameState,
+  Color neonAccentColor,
+  Color primaryTextColor,
+  Color secondaryTextColor,
+) async {
+  TextEditingController statusController = TextEditingController(
+    text: gameState.userStatusMessage,
+  );
+
+  return showDialog<void>(
+    context: context,
+    builder: (BuildContext dialogContext) {
+      return AlertDialog(
+        backgroundColor: Colors.black87.withOpacity(0.9),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+          side: BorderSide(color: neonAccentColor.withOpacity(0.5)),
+        ),
+        title: Text(
+          'Edit Status',
+          style: TextStyle(
+            color: primaryTextColor,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        content: TextField(
+          controller: statusController,
+          maxLength: 50,
+          inputFormatters: [
+            FilteringTextInputFormatter.allow(RegExp(r"[a-zA-Z\s]")),
+          ], // Allow only alphabets and space
+          style: TextStyle(color: primaryTextColor, fontSize: 14),
+          decoration: InputDecoration(
+            hintText: "What's on your mind?",
+            hintStyle: TextStyle(
+              color: secondaryTextColor.withOpacity(0.6),
+              fontSize: 14,
+            ),
+            enabledBorder: UnderlineInputBorder(
+              borderSide: BorderSide(color: neonAccentColor.withOpacity(0.4)),
+            ),
+            focusedBorder: UnderlineInputBorder(
+              borderSide: BorderSide(color: neonAccentColor, width: 1.5),
+            ),
+            counterStyle: TextStyle(
+              color: secondaryTextColor.withOpacity(0.7),
+              fontSize: 10,
+            ),
+          ),
+        ),
+        actions: <Widget>[
+          TextButton(
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: secondaryTextColor.withOpacity(0.8)),
+            ),
+            onPressed: () => Navigator.of(dialogContext).pop(),
+          ),
+          TextButton(
+            child: Text(
+              'Save',
+              style: TextStyle(
+                color: neonAccentColor,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            onPressed: () {
+              gameState.updateUserStatusMessage(statusController.text.trim());
+              Navigator.of(dialogContext).pop();
+            },
+          ),
+        ],
+      );
+    },
+  );
 }

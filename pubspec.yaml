@@ -38,9 +38,9 @@ dependencies:
   collection: ^1.17.0
   shared_preferences: ^2.0.0
   uuid: ^4.3.3 # Add this line
-  firebase_core: ^3.3.0 # Add Firebase Core
-  firebase_auth: ^5.2.0 # Add Firebase Auth
-  cloud_firestore: ^5.1.0 # Add Cloud Firestore
+  firebase_core: ^2.32.0 # Updated to latest stable
+  firebase_auth: ^4.20.0 # Updated to latest stable
+  cloud_firestore: ^4.17.4 # Updated to latest stable
 
 
 dev_dependencies:
@@ -67,12 +67,13 @@ flutter:
 
     # To add assets to your application, add an assets section, like this:
   assets:
+    - assets/ # Keep this for general assets if any are directly under assets/
+    - assets/Themes/
+    - assets/cards/
     - assets/cards/naruto/
     - assets/cards/one_piece/
     - assets/cards/teen_titans/
-    - assets/Themes/
-    - assets/cards/event_cards/powerpuff_girls/ # This will include all files in this folder, including Hinata.jpg and spirit.png
-    # - assets/cards/naruto/spirit.png # Or add individually if you prefer
+    - assets/cards/event_cards/powerpuff_girls/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

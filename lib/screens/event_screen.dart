@@ -22,7 +22,9 @@ class _EventScreenState extends State<EventScreen> {
   // Fetch RaidEvent instances from GameState
   List<RaidEvent> _getAvailableRaidEvents(GameState gameState) {
     // Fetch active raids, we'll typically want to show only open lobbies
-    return gameState.activeRaidEvents.where((raid) => raid.status == RaidEventStatus.lobbyOpen).toList();
+    return gameState.activeRaidEvents
+        .where((raid) => raid.status == RaidEventStatus.lobbyOpen)
+        .toList();
   }
 
   String _formatDuration(Duration duration) {
@@ -46,15 +48,21 @@ class _EventScreenState extends State<EventScreen> {
 
     final List<RaidEvent> filteredRaids = availableRaids.where((raidEvent) {
       final bossCard = raidEvent.bossCard;
-      final rarityMatches = _selectedRarityFilter == null || bossCard.rarity == _selectedRarityFilter;
-      final talentMatches = _selectedTalentFilter == null || bossCard.talent?.type == _selectedTalentFilter;
+      final rarityMatches =
+          _selectedRarityFilter == null ||
+          bossCard.rarity == _selectedRarityFilter;
+      final talentMatches =
+          _selectedTalentFilter == null ||
+          bossCard.talent?.type == _selectedTalentFilter;
       return rarityMatches && talentMatches;
     }).toList();
 
     return ThemedScaffold(
       appBar: AppBar(
         title: const Text("Active Raid Lobbies"),
-        // toolbarHeight: 30, // Kept from original for consistency
+        backgroundColor: Colors.transparent, // Make AppBar transparent
+        elevation: 0, // Remove shadow
+        // toolbarHeight: 30, // Consider if this specific height is necessary or use default
         actions: [
           IconButton(
             icon: const Icon(Icons.filter_list),
@@ -71,7 +79,9 @@ class _EventScreenState extends State<EventScreen> {
             child: filteredRaids.isEmpty
                 ? Center(
                     child: Text(
-                      gameState.activeRaidEvents.any((r) => r.status == RaidEventStatus.lobbyOpen)
+                      gameState.activeRaidEvents.any(
+                            (r) => r.status == RaidEventStatus.lobbyOpen,
+                          )
                           ? "No raid lobbies match your filters."
                           : "No active raid lobbies currently.",
                       style: TextStyle(color: Colors.white.withOpacity(0.8)),
@@ -82,44 +92,115 @@ class _EventScreenState extends State<EventScreen> {
                     padding: const EdgeInsets.all(8.0),
                     itemCount: filteredRaids.length,
                     itemBuilder: (context, index) {
-                      try { // Add try block to catch errors during item rendering
+                      try {
+                        // Add try block to catch errors during item rendering
                         final raidEvent = filteredRaids[index];
                         final boss = raidEvent.bossCard;
                         String timeRemainingString;
                         if (raidEvent.status == RaidEventStatus.lobbyOpen) {
-                          timeRemainingString = "Lobby closes in: ${_formatDuration(raidEvent.lobbyTimeRemaining)}";
-                        } else if (raidEvent.status == RaidEventStatus.battleInProgress) {
-                          timeRemainingString = "Battle ends in: ${_formatDuration(raidEvent.battleTimeRemaining)}";
+                          timeRemainingString =
+                              "Lobby closes in: ${_formatDuration(raidEvent.lobbyTimeRemaining)}";
+                        } else if (raidEvent.status ==
+                            RaidEventStatus.battleInProgress) {
+                          timeRemainingString =
+                              "Battle ends in: ${_formatDuration(raidEvent.battleTimeRemaining)}";
                         } else {
-                          timeRemainingString = "Status: ${raidEvent.status.name}";
+                          timeRemainingString =
+                              "Status: ${raidEvent.status.name}";
                         }
 
                         return Card(
-                          margin: const EdgeInsets.all(8.0),
-                          color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.8),
-                          child: ListTile(
-                            leading: FramedCardImageWidget(
-                              card: boss,
-                              width: 60, // Adjusted size
-                              height: 80, // Adjusted size
-                              fit: BoxFit.cover,
-                            ),
-                            title: Text(boss.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                            subtitle: Text(
-                              "Rarity: ${boss.rarity.name}\n"
-                              "Talent: ${boss.talent?.name ?? 'N/A'}\n"
-                              "Players: ${raidEvent.playersInLobby.length}/$MAX_PLAYERS_IN_LOBBY\n"
-                              "Min. to Start: ${raidEvent.minPlayersNeededToWin}\n"
-                              "$timeRemainingString",
-                              style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.9)),
-                            ),
-                            isThreeLine: true,
-                            trailing: ElevatedButton(
-                              child: const Text("View Lobby"), // Or "Join Raid"
-                              onPressed: () {
-                                // Navigate to RaidLobbyScreen, passing the raidId
-                                Navigator.pushNamed(context, '/raid_lobby', arguments: raidEvent.id);
-                              },
+                          margin: const EdgeInsets.symmetric(
+                            vertical: 8.0,
+                            horizontal: 4.0,
+                          ),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.surface.withOpacity(0.9),
+                          elevation: 2,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(12.0),
+                            child: Row(
+                              children: [
+                                FramedCardImageWidget(
+                                  card: boss,
+                                  width: 70,
+                                  height: 100,
+                                  fit: BoxFit.cover,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        boss.name,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .titleMedium
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        "Rarity: ${boss.rarity.name}",
+                                        style: Theme.of(
+                                          context,
+                                        ).textTheme.bodySmall,
+                                      ),
+                                      Text(
+                                        "Talent: ${boss.talent?.name ?? 'N/A'}",
+                                        style: Theme.of(
+                                          context,
+                                        ).textTheme.bodySmall,
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Text(
+                                        "Players: ${raidEvent.playersInLobby.length}/${raidEvent.maxParticipants}", // Use raidEvent.maxParticipants
+                                        style: Theme.of(
+                                          context,
+                                        ).textTheme.bodySmall,
+                                      ),
+                                      Text(
+                                        "Min. to Start: ${raidEvent.minPlayersNeededToWin}",
+                                        style: Theme.of(
+                                          context,
+                                        ).textTheme.bodySmall,
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Text(
+                                        timeRemainingString,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodySmall
+                                            ?.copyWith(
+                                              fontStyle: FontStyle.italic,
+                                              color: Theme.of(
+                                                context,
+                                              ).colorScheme.primary,
+                                            ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                ElevatedButton(
+                                  child: const Text("View"), // Shorter text
+                                  onPressed: () {
+                                    Navigator.pushNamed(
+                                      context,
+                                      '/raid_lobby',
+                                      arguments: raidEvent.id,
+                                    );
+                                  },
+                                ),
+                              ],
                             ),
                           ),
                         );
@@ -127,11 +208,15 @@ class _EventScreenState extends State<EventScreen> {
                         // If an error occurs rendering an item, display an error tile
                         // and print the error to the console.
                         // ignore: avoid_print
-                        print('Error rendering raid event at index $index: $e\n$s');
+                        print(
+                          'Error rendering raid event at index $index: $e\n$s',
+                        );
                         return Card(
                           color: Colors.red.withOpacity(0.5),
                           child: ListTile(
-                            title: Text('Error loading raid: ${filteredRaids.length > index ? filteredRaids[index].id : "ID Unknown"}'),
+                            title: Text(
+                              'Error loading raid: ${filteredRaids.length > index ? filteredRaids[index].id : "ID Unknown"}',
+                            ),
                             subtitle: Text(e.toString()),
                           ),
                         );
@@ -147,84 +232,97 @@ class _EventScreenState extends State<EventScreen> {
   void _showFilterDialog(BuildContext context) {
     // Basic dialog for filters, can be expanded
     showDialog(
-        context: context,
-        builder: (BuildContext dialogContext) {
-          // Use StatefulBuilder to manage the dialog's internal state for selections
-          app_card.CardRarity? tempSelectedRarity = _selectedRarityFilter;
-          TalentType? tempSelectedTalent = _selectedTalentFilter;
+      context: context,
+      builder: (BuildContext dialogContext) {
+        // Use StatefulBuilder to manage the dialog's internal state for selections
+        app_card.CardRarity? tempSelectedRarity = _selectedRarityFilter;
+        TalentType? tempSelectedTalent = _selectedTalentFilter;
 
-          return StatefulBuilder(
-            builder: (context, setDialogState) {
-              return AlertDialog(
-                title: const Text("Filter Raids"),
-                content: SingleChildScrollView( // In case of many options
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      DropdownButtonFormField<app_card.CardRarity?>(
-                        decoration: const InputDecoration(labelText: 'Filter by Rarity'),
-                        value: tempSelectedRarity,
-                        items: [
-                          const DropdownMenuItem(value: null, child: Text("All Rarities")),
-                          ...app_card.CardRarity.values.map((rarity) {
-                            return DropdownMenuItem(
-                              value: rarity,
-                              child: Text(rarity.name),
-                            );
-                          }),
-                        ],
-                        onChanged: (app_card.CardRarity? newValue) {
-                          setDialogState(() {
-                            tempSelectedRarity = newValue;
-                          });
-                        },
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text("Filter Raids"),
+              content: SingleChildScrollView(
+                // In case of many options
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    DropdownButtonFormField<app_card.CardRarity?>(
+                      decoration: const InputDecoration(
+                        labelText: 'Filter by Rarity',
                       ),
-                      const SizedBox(height: 20),
-                      DropdownButtonFormField<TalentType?>(
-                        decoration: const InputDecoration(labelText: 'Filter by Talent'),
-                        value: tempSelectedTalent,
-                        items: [
-                          const DropdownMenuItem(value: null, child: Text("All Talents")),
-                          ...TalentType.values.map((talent) {
-                            return DropdownMenuItem(
-                              value: talent,
-                              child: Text(talent.name),
-                            );
-                          }),
-                        ],
-                        onChanged: (TalentType? newValue) {
-                          setDialogState(() {
-                            tempSelectedTalent = newValue;
-                          });
-                        },
+                      value: tempSelectedRarity,
+                      items: [
+                        const DropdownMenuItem(
+                          value: null,
+                          child: Text("All Rarities"),
+                        ),
+                        ...app_card.CardRarity.values.map((rarity) {
+                          return DropdownMenuItem(
+                            value: rarity,
+                            child: Text(rarity.name),
+                          );
+                        }),
+                      ],
+                      onChanged: (app_card.CardRarity? newValue) {
+                        setDialogState(() {
+                          tempSelectedRarity = newValue;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 20),
+                    DropdownButtonFormField<TalentType?>(
+                      decoration: const InputDecoration(
+                        labelText: 'Filter by Talent',
                       ),
-                    ],
-                  ),
+                      value: tempSelectedTalent,
+                      items: [
+                        const DropdownMenuItem(
+                          value: null,
+                          child: Text("All Talents"),
+                        ),
+                        ...TalentType.values.map((talent) {
+                          return DropdownMenuItem(
+                            value: talent,
+                            child: Text(talent.name),
+                          );
+                        }),
+                      ],
+                      onChanged: (TalentType? newValue) {
+                        setDialogState(() {
+                          tempSelectedTalent = newValue;
+                        });
+                      },
+                    ),
+                  ],
                 ),
-                actions: <Widget>[
-                  TextButton(
-                    child: const Text("Clear Filters"),
-                    onPressed: () {
-                      setDialogState(() {
-                        tempSelectedRarity = null;
-                        tempSelectedTalent = null;
-                      });
-                    },
-                  ),
-                  TextButton(
-                    child: const Text("Apply"),
-                    onPressed: () {
-                      setState(() { // This setState is for the _EventScreenState
-                        _selectedRarityFilter = tempSelectedRarity;
-                        _selectedTalentFilter = tempSelectedTalent;
-                      });
-                      Navigator.of(dialogContext).pop();
-                    },
-                  ),
-                ],
-              );
-            },
-          );
-        });
+              ),
+              actions: <Widget>[
+                TextButton(
+                  child: const Text("Clear Filters"),
+                  onPressed: () {
+                    setDialogState(() {
+                      tempSelectedRarity = null;
+                      tempSelectedTalent = null;
+                    });
+                  },
+                ),
+                TextButton(
+                  child: const Text("Apply"),
+                  onPressed: () {
+                    setState(() {
+                      // This setState is for the _EventScreenState
+                      _selectedRarityFilter = tempSelectedRarity;
+                      _selectedTalentFilter = tempSelectedTalent;
+                    });
+                    Navigator.of(dialogContext).pop();
+                  },
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 }

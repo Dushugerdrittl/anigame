@@ -35,14 +35,19 @@ class _RaidLobbyScreenState extends State<RaidLobbyScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final gameState = Provider.of<GameState>(context, listen: false);
       _currentPlayerId = gameState.currentPlayerId; // Get actual player ID
-      final raid = gameState.activeRaidEvents.firstWhereOrNull((r) => r.id == widget.raidId);
-      if (raid != null && raid.status == RaidEventStatus.lobbyOpen && !raid.playersInLobby.contains(_currentPlayerId)) {
+      final raid = gameState.activeRaidEvents.firstWhereOrNull(
+        (r) => r.id == widget.raidId,
+      );
+      if (raid != null &&
+          raid.status == RaidEventStatus.lobbyOpen &&
+          !raid.playersInLobby.contains(_currentPlayerId)) {
         gameState.joinRaidLobby(widget.raidId, _currentPlayerId);
       }
 
       // Pre-fill team with first available cards if slots are empty
       for (int i = 0; i < _selectedTeamCards.length; i++) {
-        if (_selectedTeamCards[i] == null && gameState.userOwnedCards.length > i) {
+        if (_selectedTeamCards[i] == null &&
+            gameState.userOwnedCards.length > i) {
           _selectedTeamCards[i] = gameState.userOwnedCards[i];
         }
       }
@@ -79,7 +84,9 @@ class _RaidLobbyScreenState extends State<RaidLobbyScreen> {
   @override
   Widget build(BuildContext context) {
     final gameState = context.watch<GameState>();
-    final RaidEvent? raidEvent = gameState.activeRaidEvents.firstWhereOrNull((r) => r.id == widget.raidId);
+    final RaidEvent? raidEvent = gameState.activeRaidEvents.firstWhereOrNull(
+      (r) => r.id == widget.raidId,
+    );
 
     if (raidEvent == null) {
       // Raid might have expired or been removed
@@ -93,28 +100,34 @@ class _RaidLobbyScreenState extends State<RaidLobbyScreen> {
       });
       return ThemedScaffold(
         appBar: AppBar(title: const Text("Lobby Not Found")),
-        body: const Center(child: Text("This raid lobby is no longer available.")),
+        body: const Center(
+          child: Text("This raid lobby is no longer available."),
+        ),
       );
     }
 
     final app_card.Card boss = raidEvent.bossCard;
     final bool isLeader = raidEvent.lobbyLeaderId == _currentPlayerId;
     // Player must have at least one card selected to start
-    final bool hasSelectedAtLeastOneCard = _selectedTeamCards.any((card) => card != null);
-    final bool canStart = isLeader && raidEvent.playersInLobby.length >= raidEvent.minPlayersNeededToWin && hasSelectedAtLeastOneCard;
-
+    final bool hasSelectedAtLeastOneCard = _selectedTeamCards.any(
+      (card) => card != null,
+    );
+    final bool canStart =
+        isLeader &&
+        raidEvent.playersInLobby.length >= raidEvent.minPlayersNeededToWin &&
+        hasSelectedAtLeastOneCard;
 
     String timeRemainingString;
     if (raidEvent.status == RaidEventStatus.lobbyOpen) {
-      timeRemainingString = "Lobby closes in: ${_formatDuration(raidEvent.lobbyTimeRemaining)}";
+      timeRemainingString =
+          "Lobby closes in: ${_formatDuration(raidEvent.lobbyTimeRemaining)}";
       if (raidEvent.lobbyTimeRemaining == Duration.zero) {
-         timeRemainingString = "Lobby expired!";
-         // Optionally pop here if GameState hasn't removed it yet
+        timeRemainingString = "Lobby expired!";
+        // Optionally pop here if GameState hasn't removed it yet
       }
     } else {
       timeRemainingString = "Status: ${raidEvent.status.name}";
     }
-
 
     return WillPopScope(
       onWillPop: () async {
@@ -125,10 +138,11 @@ class _RaidLobbyScreenState extends State<RaidLobbyScreen> {
       child: ThemedScaffold(
         appBar: AppBar(
           title: Text("Lobby: ${boss.name}"),
-          // backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
+          backgroundColor: Colors.transparent, // Make AppBar transparent
+          elevation: 0, // Remove shadow
         ),
         body: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(12.0), // Reduced overall padding
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -138,17 +152,35 @@ class _RaidLobbyScreenState extends State<RaidLobbyScreen> {
                   children: [
                     FramedCardImageWidget(card: boss, width: 100, height: 140),
                     const SizedBox(height: 8),
-                    Text(boss.name, style: Theme.of(context).textTheme.headlineSmall),
-                    Text("Rarity: ${boss.rarity.name}", style: Theme.of(context).textTheme.titleMedium),
-                    Text(timeRemainingString, style: TextStyle(fontSize: 16, color: raidEvent.lobbyTimeRemaining < const Duration(minutes: 1) ? Colors.redAccent : Colors.white70)),
+                    Text(
+                      boss.name,
+                      style: Theme.of(context).textTheme.titleLarge, // Reduced
+                    ),
+                    Text(
+                      "Rarity: ${boss.rarity.name}",
+                      style: Theme.of(context).textTheme.titleSmall, // Reduced
+                    ),
+                    Text(
+                      timeRemainingString,
+                      style: TextStyle(
+                        fontSize: 14, // Reduced
+                        color:
+                            raidEvent.lobbyTimeRemaining <
+                                const Duration(minutes: 1)
+                            ? Colors.redAccent
+                            : Colors.white70,
+                      ),
+                    ),
                   ],
                 ),
               ),
               const SizedBox(height: 20),
-
               // Player Team Selection Area
-              Text("Your Raid Team:", style: Theme.of(context).textTheme.titleLarge),
-              const SizedBox(height: 8),
+              Text(
+                "Your Raid Team:",
+                style: Theme.of(context).textTheme.titleMedium, // Reduced
+              ),
+              const SizedBox(height: 6), // Reduced
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: List.generate(3, (index) {
@@ -156,8 +188,8 @@ class _RaidLobbyScreenState extends State<RaidLobbyScreen> {
                   return GestureDetector(
                     onTap: () => _showCardSelectionDialog(context, index),
                     child: Container(
-                      width: 85,
-                      height: 145,
+                      width: 75, // Reduced
+                      height: 125, // Reduced
                       decoration: BoxDecoration(
                         border: Border.all(color: Colors.grey.shade600),
                         borderRadius: BorderRadius.circular(8),
@@ -167,40 +199,90 @@ class _RaidLobbyScreenState extends State<RaidLobbyScreen> {
                           ? Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                FramedCardImageWidget(card: card, width: 70, height: 100),
+                                FramedCardImageWidget(
+                                  card: card,
+                                  width: 60, // Reduced
+                                  height: 85, // Reduced
+                                ),
                                 Padding(
                                   padding: const EdgeInsets.only(top: 4.0),
-                                  child: Text(card.name, style: const TextStyle(fontSize: 10), textAlign: TextAlign.center, overflow: TextOverflow.ellipsis),
+                                  child: Text(
+                                    card.name,
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.labelSmall, // Reduced
+                                    textAlign: TextAlign.center,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
                               ],
                             )
-                          : const Center(child: Icon(Icons.add_circle_outline, size: 30, color: Colors.grey)),
+                          : const Center(
+                              child: Icon(
+                                Icons.add_circle_outline,
+                                size: 24, // Reduced
+                                color: Colors.grey,
+                              ),
+                            ),
                     ),
                   );
                 }),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 16), // Reduced
               // Player List
-              Text("Players (${raidEvent.playersInLobby.length}/$MAX_PLAYERS_IN_LOBBY):", style: Theme.of(context).textTheme.titleLarge),
-              const SizedBox(height: 8),
+              Text(
+                "Players (${raidEvent.playersInLobby.length}/$MAX_PLAYERS_IN_LOBBY):",
+                style: Theme.of(context).textTheme.titleMedium, // Reduced
+              ),
+              const SizedBox(height: 6), // Reduced
               Expanded(
                 child: ListView.builder(
                   itemCount: raidEvent.playersInLobby.length,
                   itemBuilder: (context, index) {
                     final playerId = raidEvent.playersInLobby[index];
-                    final bool isThisPlayerLeader = playerId == raidEvent.lobbyLeaderId;
+                    final bool isThisPlayerLeader =
+                        playerId == raidEvent.lobbyLeaderId;
                     return Card(
-                      color: Theme.of(context).colorScheme.surface.withOpacity(0.8),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.surface.withOpacity(0.8),
+                      margin: const EdgeInsets.symmetric(
+                        vertical: 4.0,
+                      ), // Added margin for spacing
                       child: ListTile(
-                        leading: Icon(isThisPlayerLeader ? Icons.star : Icons.person),
-                        title: Text(playerId == _currentPlayerId ? "$playerId (You)" : playerId),
-                        subtitle: isThisPlayerLeader ? const Text("Lobby Leader") : null,
+                        dense: true, // Makes ListTile more compact
+                        leading: Icon(
+                          isThisPlayerLeader ? Icons.star : Icons.person,
+                          size: 20, // Reduced
+                        ),
+                        title: Text(
+                          playerId == _currentPlayerId
+                              ? "$playerId (You)"
+                              : playerId,
+                          style: Theme.of(
+                            context,
+                          ).textTheme.bodyMedium, // Adjusted
+                        ),
+                        subtitle: isThisPlayerLeader
+                            ? Text(
+                                "Lobby Leader",
+                                style: Theme.of(context).textTheme.labelSmall,
+                              ) // Adjusted
+                            : null,
                         trailing: (isLeader && playerId != _currentPlayerId)
                             ? IconButton(
-                                icon: const Icon(Icons.remove_circle_outline, color: Colors.redAccent),
+                                icon: const Icon(
+                                  Icons.remove_circle_outline,
+                                  color: Colors.redAccent,
+                                ),
+                                iconSize: 20, // Reduced
                                 tooltip: "Kick Player",
                                 onPressed: () {
-                                  gameState.kickPlayerFromRaidLobby(widget.raidId, _currentPlayerId, playerId);
+                                  gameState.kickPlayerFromRaidLobby(
+                                    widget.raidId,
+                                    _currentPlayerId,
+                                    playerId,
+                                  );
                                 },
                               )
                             : null,
@@ -209,8 +291,7 @@ class _RaidLobbyScreenState extends State<RaidLobbyScreen> {
                   },
                 ),
               ),
-              const SizedBox(height: 20),
-
+              const SizedBox(height: 16), // Reduced
               // Actions
               if (raidEvent.status == RaidEventStatus.lobbyOpen)
                 Row(
@@ -218,37 +299,88 @@ class _RaidLobbyScreenState extends State<RaidLobbyScreen> {
                   children: [
                     ElevatedButton.icon(
                       icon: const Icon(Icons.exit_to_app),
-                      label: const Text("Leave Lobby"),
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.orange.shade700),
+                      label: Text(
+                        "Leave",
+                        style: Theme.of(context).textTheme.labelMedium,
+                      ), // Adjusted text & style
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.orange.shade700,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ), // Reduced padding
+                      ),
                       onPressed: () {
-                        gameState.leaveRaidLobby(widget.raidId, _currentPlayerId);
+                        gameState.leaveRaidLobby(
+                          widget.raidId,
+                          _currentPlayerId,
+                        );
                         Navigator.of(context).pop();
                       },
                     ),
                     if (isLeader)
                       ElevatedButton.icon(
-                        icon: const Icon(Icons.play_arrow),
-                        label: Text(raidEvent.playersInLobby.length < raidEvent.minPlayersNeededToWin
-                            ? "Need ${raidEvent.minPlayersNeededToWin - raidEvent.playersInLobby.length} more"
-                            : "Start Raid"),
-                        style: ElevatedButton.styleFrom(backgroundColor: canStart ? Colors.green : Colors.grey),
+                        icon: Icon(
+                          Icons.play_arrow,
+                          color: canStart ? Colors.white : Colors.grey.shade700,
+                        ),
+                        label: Text(
+                          // Adjusted text & style
+                          raidEvent.playersInLobby.length <
+                                  raidEvent.minPlayersNeededToWin
+                              ? "Need ${raidEvent.minPlayersNeededToWin - raidEvent.playersInLobby.length} more"
+                              : "Start Raid",
+                          style: Theme.of(context).textTheme.labelMedium
+                              ?.copyWith(
+                                color: canStart
+                                    ? Colors.white
+                                    : Colors.grey.shade700,
+                              ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: canStart
+                              ? Colors.green
+                              : Colors
+                                    .grey
+                                    .shade800, // Darker grey for disabled
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ), // Reduced padding
+                        ),
                         onPressed: canStart
-                            ? () {
-                                bool success = gameState.startRaidBattle(widget.raidId, _currentPlayerId);
+                            ? () async {
+                                bool success = await gameState.startRaidBattle(
+                                  widget.raidId,
+                                  _currentPlayerId,
+                                );
+                                print(
+                                  "Raid battle start attempt success: $success",
+                                ); // Debug print
                                 if (success && mounted) {
                                   // Prepare team from selected cards
                                   List<String> teamCardIds = _selectedTeamCards
-                                      .where((card) => card != null) // Filter out nulls
+                                      .where(
+                                        (card) => card != null,
+                                      ) // Filter out nulls
                                       .map((card) => card!.id)
                                       .toList();
 
-                                  Navigator.popAndPushNamed(context, '/raid_battle', arguments: {
-                                    'raidId': widget.raidId,
-                                    'playerTeamCardIds': teamCardIds,
-                                  });
+                                  Navigator.popAndPushNamed(
+                                    context,
+                                    '/raid_battle',
+                                    arguments: {
+                                      'raidId': widget.raidId,
+                                      'playerTeamCardIds': teamCardIds,
+                                    },
+                                  );
                                 } else {
-                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text("Failed to start raid. Conditions not met.")),
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        "Failed to start raid. Conditions not met.",
+                                      ),
+                                    ),
                                   );
                                 }
                               }
@@ -256,8 +388,13 @@ class _RaidLobbyScreenState extends State<RaidLobbyScreen> {
                       ),
                   ],
                 ),
-                if (raidEvent.status != RaidEventStatus.lobbyOpen)
-                  Center(child: Text("Lobby is ${raidEvent.status.name}", style: Theme.of(context).textTheme.titleMedium)),
+              if (raidEvent.status != RaidEventStatus.lobbyOpen)
+                Center(
+                  child: Text(
+                    "Lobby is ${raidEvent.status.name}",
+                    style: Theme.of(context).textTheme.titleSmall, // Reduced
+                  ),
+                ),
             ],
           ),
         ),
@@ -269,23 +406,34 @@ class _RaidLobbyScreenState extends State<RaidLobbyScreen> {
     final gameState = Provider.of<GameState>(context, listen: false);
     // Filter out cards already selected in other slots
     final availableCardsForSlot = gameState.userOwnedCards.where((ownedCard) {
-      return !_selectedTeamCards.any((selectedCard) => selectedCard != null && selectedCard.id == ownedCard.id && _selectedTeamCards.indexOf(selectedCard) != teamSlotIndex);
+      return !_selectedTeamCards.any(
+        (selectedCard) =>
+            selectedCard != null &&
+            selectedCard.id == ownedCard.id &&
+            _selectedTeamCards.indexOf(selectedCard) != teamSlotIndex,
+      );
     }).toList();
 
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
+          // Consider making this dialog more compact too if needed
           title: Text("Select Card for Slot ${teamSlotIndex + 1}"),
           content: SizedBox(
             width: double.maxFinite,
             child: ListView.builder(
-              itemCount: availableCardsForSlot.length + 1, // +1 for "Remove Card" option
+              itemCount:
+                  availableCardsForSlot.length +
+                  1, // +1 for "Remove Card" option
               itemBuilder: (context, index) {
                 if (index == availableCardsForSlot.length) {
                   // "Remove Card" option
                   return ListTile(
-                    leading: const Icon(Icons.remove_circle_outline, color: Colors.redAccent),
+                    leading: const Icon(
+                      Icons.remove_circle_outline,
+                      color: Colors.redAccent,
+                    ),
                     title: const Text("Remove Card from Slot"),
                     onTap: () {
                       setState(() {
@@ -297,8 +445,16 @@ class _RaidLobbyScreenState extends State<RaidLobbyScreen> {
                 }
                 final card = availableCardsForSlot[index];
                 return ListTile(
-                  leading: FramedCardImageWidget(card: card, width: 40, height: 60),
-                  title: Text(card.name),
+                  dense: true,
+                  leading: FramedCardImageWidget(
+                    card: card,
+                    width: 35, // Reduced
+                    height: 50, // Reduced
+                  ),
+                  title: Text(
+                    card.name,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ), // Adjusted
                   subtitle: Text("Lvl: ${card.level} - ${card.rarity.name}"),
                   onTap: () {
                     setState(() {
